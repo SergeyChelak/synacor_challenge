@@ -71,8 +71,9 @@ impl Machine {
         }
     }
 
-    fn read_register_idx(&mut self) -> usize {
+    fn read_register_idx(&mut self) -> usize {        
         let value = self.read_next() as usize;
+        assert!(value >= REGISTERS_OFFSET, "Register index access violation");
         value - REGISTERS_OFFSET
     }
 
@@ -81,13 +82,19 @@ impl Machine {
     }
 
     fn read_memory_at(&self, address: usize) -> u16 {
+        assert!(address < REGISTERS_OFFSET, "Read memory violation");
         let pos = address << 1;
         self.memory[pos] as u16 | (self.memory[pos + 1] as u16) << 8
     }
 
     fn write_memory_at(&mut self, address: usize, value: u16) {
+        assert!(address < REGISTERS_OFFSET, "Write memory violation");
         let pos = address << 1;
-        todo!()
+        let low_byte = (value & 0xff) as u8;
+        let high_byte = ((value & 0xff00) >> 8) as u8;        
+        // write as little endian
+        self.memory[pos] = low_byte;
+        self.memory[pos + 1] = high_byte;        
     }
 
     // -- operations 
@@ -199,7 +206,7 @@ impl Machine {
     fn not(&mut self) {
         let a = self.read_register_idx();
         // TODO: if high bit is erased
-        let b = !self.read_value() << 1 >> 1;
+        let b = !self.read_value() & 0x7fff;
         self.register[a] = b
     }
 
