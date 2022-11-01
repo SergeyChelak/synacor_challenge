@@ -5,9 +5,7 @@ pub struct Machine {
     memory: Vec<u8>,
     register: [u16; REGISTERS_COUNT],
     stack: Vec<u16>,
-
     cp: usize,      // code pointer
-
     is_running: bool,
 }
 
@@ -18,7 +16,6 @@ impl Machine {
             register: [0; REGISTERS_COUNT], 
             stack: Vec::new(),
             cp: 0,
-
             is_running: false,
         }
     }
@@ -49,6 +46,7 @@ impl Machine {
                 17 => self.call(),
                 18 => self.ret(),
                 19 => self.out(),
+                20 => self.in_op(),
                 21 => self.noop(),
                 _ =>
                     panic!("Unhandled instruction {}", instruction),
@@ -243,6 +241,13 @@ impl Machine {
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
         print!("{}", arg);
+    }
+
+    // in: 20 a
+    // 20: read a character from the terminal and write its ascii code to <a>
+    fn in_op(&mut self) {
+        // let a = self.read_register_idx();
+        todo!("Operation `in` isn't implemented")
     }
 
     // 21: no operation
