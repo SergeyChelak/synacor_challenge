@@ -47,6 +47,7 @@ impl Machine {
                 15 => self.rmem(),
                 16 => self.wmem(),
                 17 => self.call(),
+                18 => self.ret(),
                 19 => self.out(),
                 21 => self.noop(),
                 _ =>
@@ -232,6 +233,12 @@ impl Machine {
         self.cp = jmp_addr as usize;
     }
 
+    // 18: remove the top element from the stack and jump to it; empty stack = halt
+    fn ret(&mut self) {
+        let jmp_addr = self.stack.pop().unwrap();
+        self.cp = jmp_addr as usize;
+    }
+    
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;

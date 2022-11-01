@@ -6,7 +6,7 @@ mod machine;
 use machine::Machine;
 
 fn main() -> io::Result<()> {
-    println!("== Rusty Virtual Machine ==");
+    println!("* Rusty Virtual Machine *");
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         show_usage(&args[0]);
@@ -17,7 +17,7 @@ fn main() -> io::Result<()> {
     println!();
     let mut machine = Machine::new(program);
     machine.run();
-    println!("\n== Goodbye ==");
+    println!("\n* Goodbye *");
     Ok(())
 }
 
