@@ -1,3 +1,5 @@
+use std::io;
+
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
 
@@ -6,6 +8,7 @@ pub struct Machine {
     register: [u16; REGISTERS_COUNT],
     stack: Vec<u16>,
     cp: usize,      // code pointer
+    input_buffer: Vec<u8>,
     is_running: bool,
 }
 
@@ -16,6 +19,7 @@ impl Machine {
             register: [0; REGISTERS_COUNT], 
             stack: Vec::new(),
             cp: 0,
+            input_buffer: Vec::new(),
             is_running: false,
         }
     }
@@ -243,11 +247,20 @@ impl Machine {
         print!("{}", arg);
     }
 
-    // in: 20 a
     // 20: read a character from the terminal and write its ascii code to <a>
-    fn in_op(&mut self) {
-        // let a = self.read_register_idx();
-        todo!("Operation `in` isn't implemented")
+    // It can be assumed that once input starts, it will continue until a newline is encountered
+    // This means that you can safely read whole lines from the keyboard and trust that they will be fully read
+    fn in_op(&mut self) {        
+        if self.input_buffer.is_empty() {
+            let mut buffer = String::new();
+            io::stdin().read_line(&mut buffer).unwrap();
+            for byte in buffer.as_bytes().iter().rev() {
+                self.input_buffer.push(*byte);
+            }
+        }
+        let ascii = self.input_buffer.pop().unwrap() as u16;
+        let a = self.read_register_idx();
+        self.register[a] = ascii;
     }
 
     // 21: no operation
