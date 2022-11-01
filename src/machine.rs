@@ -40,9 +40,12 @@ impl Machine {
                  8 => self.jf(),
                  9 => self.add(),
                 10 => self.mult(),
+                11 => self.mod_op(),
                 12 => self.and(),
                 13 => self.or(),
                 14 => self.not(),
+                15 => self.rmem(),
+                16 => self.wmem(),
                 17 => self.call(),
                 19 => self.out(),
                 21 => self.noop(),
@@ -74,8 +77,17 @@ impl Machine {
     }
 
     fn read_memory(&self) -> u16 {
-        let pos = self.cp << 1;
+        self.read_memory_at(self.cp)
+    }
+
+    fn read_memory_at(&self, address: usize) -> u16 {
+        let pos = address << 1;
         self.memory[pos] as u16 | (self.memory[pos + 1] as u16) << 8
+    }
+
+    fn write_memory_at(&mut self, address: usize, value: u16) {
+        let pos = address << 1;
+        todo!()
     }
 
     // -- operations 
@@ -159,6 +171,14 @@ impl Machine {
         self.register[a] = (b * c % REGISTERS_OFFSET) as u16;
     }
 
+    // 11 store into <a> the remainder of <b> divided by <c>
+    fn mod_op(&mut self) {
+        let a = self.read_register_idx();
+        let b = self.read_value();
+        let c = self.read_value();
+        self.register[a] = b % c 
+    }
+
     // 12: stores into <a> the bitwise and of <b> and <c>
     fn and(&mut self) {
         let a = self.read_register_idx();
@@ -181,6 +201,20 @@ impl Machine {
         // TODO: if high bit is erased
         let b = !self.read_value() << 1 >> 1;
         self.register[a] = b
+    }
+
+    // 15: read memory at address <b> and write it to <a>
+    fn rmem(&mut self) {
+        let a = self.read_register_idx();
+        let b = self.read_value();
+        self.register[a] = self.read_memory_at(b as usize)
+    }
+
+    // 16: write the value from <b> into memory at address <a>
+    fn wmem(&mut self) {
+        let a = self.read_value() as usize; // addr
+        let b = self.read_value();
+        self.write_memory_at(a, b);
     }
 
     // 17: write the address of the next instruction to the stack and jump to <a>
