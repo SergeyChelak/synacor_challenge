@@ -270,6 +270,4 @@ impl Machine {
     fn noop(&self) {
         // no op
     }
-
-    // -- utils
 }
