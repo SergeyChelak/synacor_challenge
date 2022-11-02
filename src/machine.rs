@@ -2,6 +2,7 @@ use std::io;
 
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
+const MEMORY_SIZE: usize = 0xffff; // in bytes
 
 pub struct Machine {
     memory: Vec<u8>,
@@ -13,7 +14,9 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(program: Vec<u8>) -> Self {
+    pub fn new(mut program: Vec<u8>) -> Self {
+        // TODO: validate if program size is less than MEMORY_SIZE
+        program.resize(MEMORY_SIZE, 0);
         Machine { 
             memory: program, 
             register: [0; REGISTERS_COUNT], 
