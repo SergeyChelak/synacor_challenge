@@ -15,7 +15,7 @@ pub struct Machine {
 
 impl Machine {
     pub fn new(mut program: Vec<u8>) -> Self {
-        // TODO: validate if program size is less than MEMORY_SIZE
+        assert!(program.len() <= MEMORY_SIZE, "Out of memory");
         program.resize(MEMORY_SIZE, 0);
         Machine { 
             memory: program, 
