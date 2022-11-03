@@ -11,3 +11,19 @@ take empty lantern
 west
 west
 passage
+ladder
+west
+south
+north
+take can
+use can
+use lantern
+west
+ladder
+darkness
+continue
+west
+west
+west
+west
+north
