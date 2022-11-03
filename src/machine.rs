@@ -211,7 +211,6 @@ impl Machine {
     // 14: stores 15-bit bitwise inverse of <b> in <a>
     fn not(&mut self) {
         let a = self.read_register_idx();
-        // TODO: if high bit is erased
         let b = !self.read_value() & 0x7fff;
         self.register[a] = b
     }
