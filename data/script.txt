@@ -27,3 +27,11 @@ west
 west
 west
 north
+take red coin
+north
+east
+take concave coin
+down
+take corroded coin
+up
+west
