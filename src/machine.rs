@@ -16,11 +16,10 @@ pub struct Machine {
 impl Machine {
     pub fn new(program: Vec<u8>) -> Self {
         assert_eq!(program.len() % 2, 0, "Incorrect binary size");
-        assert!(program.len() / 2 <= MEMORY_SIZE, "Out of memory");
+        assert!(program.len() / 2 <= MEMORY_SIZE, "Binary is too big to fit the memory size");
         let mut memory: [u16; MEMORY_SIZE] = [0; MEMORY_SIZE];
         for i in (0..program.len()).step_by(2) {
-            let ptr = i >> 1;
-            memory[ptr] = u16::from_le_bytes([program[i], program[i + 1]]);
+            memory[i >> 1] = u16::from_le_bytes([program[i], program[i + 1]]);
         }
 
         Machine { 
