@@ -69,7 +69,7 @@ impl Machine {
 
     #[inline]
     fn read_next(&mut self) -> u16 {
-        let value = self.read_memory();
+        let value = self.read_memory_at(self.cp);
         self.cp += 1;
         value
     }
@@ -90,11 +90,6 @@ impl Machine {
         let value = self.read_next() as usize;
         assert!(value >= REGISTERS_OFFSET, "Register index access violation");
         value - REGISTERS_OFFSET
-    }
-
-    #[inline]
-    fn read_memory(&self) -> u16 {
-        self.read_memory_at(self.cp)
     }
 
     #[inline]
