@@ -2,10 +2,10 @@ use std::io;
 
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
-const MEMORY_SIZE: usize = 0xffff; // in bytes
+const MEMORY_SIZE: usize = 1 << 15; // words
 
 pub struct Machine {
-    memory: Vec<u8>,
+    memory: [u16; MEMORY_SIZE],
     register: [u16; REGISTERS_COUNT],
     stack: Vec<u16>,
     cp: usize,      // code pointer
@@ -14,11 +14,17 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(mut program: Vec<u8>) -> Self {
-        assert!(program.len() <= MEMORY_SIZE, "Out of memory");
-        program.resize(MEMORY_SIZE, 0);
+    pub fn new(program: Vec<u8>) -> Self {
+        assert_eq!(program.len() % 2, 0, "Incorrect binary size");
+        assert!(program.len() / 2 <= MEMORY_SIZE, "Out of memory");
+        let mut memory: [u16; MEMORY_SIZE] = [0; MEMORY_SIZE];
+        for i in (0..program.len()).step_by(2) {
+            let ptr = i >> 1;
+            memory[ptr] = u16::from_le_bytes([program[i], program[i + 1]]);
+        }
+
         Machine { 
-            memory: program, 
+            memory, 
             register: [0; REGISTERS_COUNT], 
             stack: Vec::new(),
             cp: 0,
@@ -89,18 +95,12 @@ impl Machine {
 
     fn read_memory_at(&self, address: usize) -> u16 {
         assert!(address < REGISTERS_OFFSET, "Read memory violation");
-        let pos = address << 1;
-        self.memory[pos] as u16 | (self.memory[pos + 1] as u16) << 8
+        self.memory[address]
     }
 
     fn write_memory_at(&mut self, address: usize, value: u16) {
         assert!(address < REGISTERS_OFFSET, "Write memory violation");
-        let pos = address << 1;
-        let low_byte = (value & 0xff) as u8;
-        let high_byte = ((value & 0xff00) >> 8) as u8;        
-        // write as little endian
-        self.memory[pos] = low_byte;
-        self.memory[pos + 1] = high_byte;        
+        self.memory[address] = value;
     }
 
     // -- operations 
