@@ -67,12 +67,14 @@ impl Machine {
         }
     }
 
+    #[inline]
     fn read_next(&mut self) -> u16 {
         let value = self.read_memory();
         self.cp += 1;
         value
     }
 
+    #[inline]
     fn read_value(&mut self) -> u16 {
         let value = self.read_next();
         if value < REGISTERS_OFFSET as u16 {
@@ -83,21 +85,25 @@ impl Machine {
         }
     }
 
+    #[inline]
     fn read_register_idx(&mut self) -> usize {        
         let value = self.read_next() as usize;
         assert!(value >= REGISTERS_OFFSET, "Register index access violation");
         value - REGISTERS_OFFSET
     }
 
+    #[inline]
     fn read_memory(&self) -> u16 {
         self.read_memory_at(self.cp)
     }
 
+    #[inline]
     fn read_memory_at(&self, address: usize) -> u16 {
         assert!(address < REGISTERS_OFFSET, "Read memory violation");
         self.memory[address]
     }
 
+    #[inline]
     fn write_memory_at(&mut self, address: usize, value: u16) {
         assert!(address < REGISTERS_OFFSET, "Write memory violation");
         self.memory[address] = value;
