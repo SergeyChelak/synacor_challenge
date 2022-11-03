@@ -20,10 +20,10 @@ fn main() -> io::Result<()> {
         load_script(path, &mut script)?;
         println!("{} commands loaded", script.len());        
     }
-
+    
     println!();
 
-    let mut machine = Machine::new(program);
+    let mut machine = Machine::new(program, script);
     machine.run();
     println!("\n* Goodbye *");
     Ok(())
