@@ -232,7 +232,6 @@ impl Machine {
 
     // 17: write the address of the next instruction to the stack and jump to <a>
     fn call(&mut self) {
-        // TODO: check the order
         let jmp_addr = self.read_value();
         self.stack.push(self.cp as u16);
         self.cp = jmp_addr as usize;
