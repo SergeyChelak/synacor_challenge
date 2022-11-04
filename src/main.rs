@@ -14,16 +14,18 @@ fn main() -> io::Result<()> {
     }
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
-    
-    let mut script: Vec<String> = Vec::new();
+    let mut machine = Machine::new(program);
+    // setting up optional script        
     if let Some(path) = args.get(2) {
+        let mut script: Vec<String> = Vec::new();
         load_script(path, &mut script)?;
-        println!("{} commands loaded", script.len());        
+        println!("{} commands loaded", script.len());
+        //         
+        machine.write_to_input_buffer(&script);
     }
     
     println!();
-
-    let mut machine = Machine::new(program, script);
+    
     machine.run();
     println!("\n* Goodbye *");
     Ok(())
