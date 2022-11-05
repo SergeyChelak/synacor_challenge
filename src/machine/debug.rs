@@ -24,10 +24,10 @@ pub trait DebugOutput {
     fn complete(&self);
 }
 
-fn format(tokens: &Vec<DebugToken>) -> String {    
+pub fn format_debug_tokens(tokens: &Vec<DebugToken>) -> String {    
     let fmt_instr = format_instructions(tokens);
     let fmt_comments = format_comments(tokens);
-    format!("{:20} {}", fmt_instr, fmt_comments)
+    format!("{:50} {}", fmt_instr, fmt_comments)
 }
 
 fn format_instructions(tokens: &Vec<DebugToken>) -> String {
@@ -48,11 +48,11 @@ fn format_instructions(tokens: &Vec<DebugToken>) -> String {
 }
 
 fn format_address(address: usize) -> String {
-    format!("{:5}", address)
+    format!("{:<9}", address)
 }
 
 fn format_operation(op_code: u16) -> String {
-    match op_code {
+    let name = match op_code {
         0 => "halt",
         1 => "set",
         2 => "push",
@@ -76,7 +76,8 @@ fn format_operation(op_code: u16) -> String {
         20 => "in",
         21 => "noop",
         _ => "???"
-    }.to_string()
+    };
+    format!("{:>7}", name)
 }
 
 fn format_value(value: u16, reg_idx_opt: Option<usize>) -> String {
@@ -85,7 +86,7 @@ fn format_value(value: u16, reg_idx_opt: Option<usize>) -> String {
         comps.push(format_register_idx(reg_idx));
     }
     comps.push(format!("{value}"));
-    comps.join("")
+    format!("{:<9}", comps.join(""))
 }
 
 fn format_register_idx(idx: usize) -> String {
