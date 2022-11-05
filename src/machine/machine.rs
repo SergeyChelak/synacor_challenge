@@ -128,16 +128,23 @@ impl Machine {
     fn write_memory_at(&mut self, address: usize, value: u16) {
         assert!(address < REGISTERS_OFFSET, "Write memory violation");
         self.memory[address] = value;
-    }    
+    }   
 
     #[inline]
-    fn read_register_idx_binary_args(&mut self) -> (usize, u16, u16) {
+    fn read_register_idx_unary_arg(&mut self) -> (usize, u16) {
         let a = self.read_register_idx();
         self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
         
         let b_idx = self.dbg_register_idx();
         let b = self.read_value();
         self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
+
+        (a, b)
+    }
+
+    #[inline]
+    fn read_register_idx_binary_args(&mut self) -> (usize, u16, u16) {
+        let (a, b) = self.read_register_idx_unary_arg();
 
         let c_idx = self.dbg_register_idx();
         let c = self.read_value();
@@ -154,13 +161,7 @@ impl Machine {
 
     // 1:  set register <a> to the value of <b>
     fn set(&mut self) {
-        let a = self.read_register_idx();
-        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
-        
-        let b_idx = self.dbg_register_idx();
-        let b = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
-        
+        let (a, b) = self.read_register_idx_unary_arg();        
         self.write_register(a, b);
     }
 
@@ -245,25 +246,20 @@ impl Machine {
 
     // 12: stores into <a> the bitwise and of <b> and <c>
     fn and(&mut self) {
-        let a = self.read_register_idx();
-        let b = self.read_value();
-        let c = self.read_value();
-        self.register[a] = b & c;
+        let (a, b, c) = self.read_register_idx_binary_args();
+        self.write_register(a, b & c);
     }
 
     // 13: stores into <a> the bitwise or of <b> and <c>
     fn or(&mut self) {
-        let a = self.read_register_idx();
-        let b = self.read_value();
-        let c = self.read_value();
-        self.register[a] = b | c;
+        let (a, b, c) = self.read_register_idx_binary_args();
+        self.write_register(a, b | c);
     }
 
     // 14: stores 15-bit bitwise inverse of <b> in <a>
     fn not(&mut self) {
-        let a = self.read_register_idx();
-        let b = !self.read_value() & 0x7fff;
-        self.register[a] = b
+        let (a, b) = self.read_register_idx_unary_arg();
+        self.write_register(a, !b & 0x7fff);
     }
 
     // 15: read memory at address <b> and write it to <a>
