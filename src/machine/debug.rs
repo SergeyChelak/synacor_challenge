@@ -18,12 +18,6 @@ impl DebugToken {
     }
 }
 
-pub trait DebugOutput {
-    fn write(&self, tokens: &Vec<DebugToken>);
-
-    fn complete(&self);
-}
-
 pub struct DebugFormatter {
     instr_width: usize,
     value_width: usize,

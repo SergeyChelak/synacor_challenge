@@ -1,5 +1,4 @@
 use std::io;
-
 use super::debug::*;
 
 const REGISTERS_COUNT: usize = 8;
@@ -13,13 +12,11 @@ pub struct Machine {
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
     is_running: bool,    
-    debug_buffer: Vec<DebugToken>,
-    debug_output: Option<Box<dyn DebugOutput>>,
-    skip_cycles: usize,
+    token_buffer: Vec<DebugToken>,
 }
 
 impl Machine {
-    pub fn new(program: Vec<u8>, debug_output: Option<Box<dyn DebugOutput>>) -> Self {
+    pub fn new(program: Vec<u8>) -> Self {
         Machine { 
             memory: Self::setup_memory(program), 
             register: [0; REGISTERS_COUNT], 
@@ -27,9 +24,7 @@ impl Machine {
             cp: 0,
             input_buffer: Vec::new(),
             is_running: false,
-            debug_buffer: Vec::new(),
-            debug_output,
-            skip_cycles: 0,
+            token_buffer: Vec::with_capacity(10),
         }
     }
 
@@ -52,10 +47,6 @@ impl Machine {
             }            
         }
         self.input_buffer = input_buffer;
-    }
-
-    pub fn set_skip_cycles(&mut self, cycles: usize) {
-        self.skip_cycles = cycles;
     }
 
     // -- main loop
@@ -91,16 +82,8 @@ impl Machine {
                 _ =>
                     panic!("Unhandled instruction {}", operation),
             }
-            if let Some(debug_output) = self.debug_output.as_ref() {
-                debug_output.write(&self.debug_buffer);
-                self.debug_buffer.clear();
-            }
-            for _ in 0..self.skip_cycles {
-                // do nothing
-            }
-        }
-        if let Some(debug_output) = self.debug_output.as_ref() {
-            debug_output.complete();
+            // TODO: add executed instruction to buffer
+            self.token_buffer.clear();
         }
     }
 
@@ -296,7 +279,11 @@ impl Machine {
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
-        print!("{}", arg);
+        print!("{arg}");
+        // don't comment whitespaces
+        if arg.is_alphanumeric() {
+            self.dbg_push_debug_token(DebugToken::Comment(format!("{arg}")));
+        }        
     }
 
     // 20: read a character from the terminal and write its ascii code to <a>
@@ -306,6 +293,10 @@ impl Machine {
         if self.input_buffer.is_empty() {
             let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).unwrap();
+            if buffer == "dbg\n" {
+                self.dbg_start_debugger();
+                io::stdin().read_line(&mut buffer).unwrap();
+            } 
             for byte in buffer.as_bytes().iter().rev() {
                 self.input_buffer.push(*byte);
             }
@@ -324,6 +315,19 @@ impl Machine {
 
     // -- debugger
     fn dbg_push_debug_token(&mut self, token: DebugToken) {
-        self.debug_buffer.push(token)            
+        self.token_buffer.push(token)            
+    }
+
+    fn dbg_start_debugger(&mut self) {
+        println!("* Debugger *");        
+        let mut buffer = String::new();
+        loop {
+            io::stdin().read_line(&mut buffer).unwrap();
+            if buffer == "cnt\n" {
+                break;
+            }
+            println!("Unknow command. Try again");
+        }
+        println!("* Continue execution *");
     }
 }
