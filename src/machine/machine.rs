@@ -189,8 +189,7 @@ impl Machine {
     // 5: set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
     fn gt(&mut self) {
         let (a, b, c) = self.read_register_idx_binary_args();
-        self.register[a] = if b > c { 1 } else { 0 };
-        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{a}] = {}", self.register[a])));
+        self.write_register(a, if b > c { 1 } else { 0 });
     }
 
     // 6: jump to <a>
@@ -229,24 +228,19 @@ impl Machine {
     // 9: assign into <a> the sum of <b> and <c> (modulo 32768)
     fn add(&mut self) {
         let (a, b, c) = self.read_register_idx_binary_args();
-        self.register[a] = (b + c) % REGISTERS_OFFSET as u16;
-        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{a}] = {}", self.register[a])));
+        self.write_register(a, (b + c) % REGISTERS_OFFSET as u16);
     }
 
     // 10: store into <a> the product of <b> and <c> (modulo 32768)
     fn mult(&mut self) {
-        let a = self.read_register_idx();
-        let b = self.read_value() as usize;
-        let c = self.read_value() as usize;
-        self.register[a] = (b * c % REGISTERS_OFFSET) as u16;
+        let (a, b, c) = self.read_register_idx_binary_args();
+        self.write_register(a, (b as usize * c as usize % REGISTERS_OFFSET) as u16);
     }
 
     // 11 store into <a> the remainder of <b> divided by <c>
     fn mod_op(&mut self) {
-        let a = self.read_register_idx();
-        let b = self.read_value();
-        let c = self.read_value();
-        self.register[a] = b % c 
+        let (a, b, c) = self.read_register_idx_binary_args();
+        self.write_register(a, b % c);
     }
 
     // 12: stores into <a> the bitwise and of <b> and <c>
