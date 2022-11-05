@@ -6,8 +6,9 @@ pub enum DebuggerCommand {
     RegistersPrint,             // prints registers state
     RegisterWrite(usize, u16),  // writes u16 value to specified register
     StackSizePrint,             // shows amount of items in stack
-    StackPrint,                // prints stack's values
+    StackPrint,                 // prints stack's values
     TracePrint,                 // prints latest execution trace
+    TraceSizePrint,             // prints number of operations in trace
     TraceResize(usize),         // updates trace buffer size (in lines)
     TraceClear,                 // removes all records from trace
     CodePointerPrint,           // prints current code pointer
@@ -28,6 +29,7 @@ enum CommandId {
     StackSizePrint,
     StackPrint,
     TracePrint,
+    TraceSizePrint,
     TraceResize,
     TraceClear,
     CodePointerPrint,
@@ -53,12 +55,11 @@ const DBG_CMD_TRACE: &str = "trace";
 const DBG_CMD_CODE_POINTER: &str = "cp";
 const DBG_CMD_CONTINUE: &str = "cnt";
 
-const DBG_CMD_LIST: &str = "list";
 const DBG_CMD_ADD: &str = "add";
 const DBG_CMD_REMOVE: &str = "rem";
 const DBG_CMD_WRITE: &str = "write";
 const DBG_CMD_SIZE: &str = "size";
-const DBG_CMD_CLEAR: &str = "cls";
+const DBG_CMD_CLEAR: &str = "clear";
 const DBG_CMD_TRUE: &str = "true";
 const DBG_CMD_FALSE: &str = "false";
 
@@ -75,18 +76,19 @@ impl DebugCommandParser {
 
     fn create_matching_rules() -> Vec<(CommandId, Vec<Rule>)> {        
         vec![
-            (CommandId::BreakpointsPrint, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::EqualStr(DBG_CMD_LIST)]),
+            (CommandId::BreakpointsPrint, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT)]),
             (CommandId::BreakpointAdd, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::EqualStr(DBG_CMD_ADD), Rule::AnyNumber]),
             (CommandId::BreakpointRemove, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::EqualStr(DBG_CMD_REMOVE), Rule::AnyNumber]),
             (CommandId::BreakpointsEnabled, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::AnyBool]),                                   
 
-            (CommandId::RegistersPrint, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_LIST)]),
+            (CommandId::RegistersPrint, vec![Rule::EqualStr(DBG_CMD_REGISTER)]),
             (CommandId::RegisterWrite, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber]),
 
             (CommandId::StackSizePrint, vec![Rule::EqualStr(DBG_CMD_STACK), Rule::EqualStr(DBG_CMD_SIZE)]),
             (CommandId::StackPrint, vec![Rule::EqualStr(DBG_CMD_STACK)]),
 
             (CommandId::TracePrint, vec![Rule::EqualStr(DBG_CMD_TRACE)]),
+            (CommandId::TraceSizePrint, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE)]),
             (CommandId::TraceResize, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE), Rule::AnyNumber]),
             (CommandId::TraceClear, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_CLEAR)]),
 
@@ -175,6 +177,7 @@ impl DebugCommandParser {
             CommandId::StackSizePrint => DebuggerCommand::StackSizePrint,
             CommandId::StackPrint => DebuggerCommand::StackPrint,
             CommandId::TracePrint => DebuggerCommand::TracePrint,
+            CommandId::TraceSizePrint => DebuggerCommand::TraceSizePrint,
             CommandId::TraceResize =>
                 if let Parameter::Usize(number) = params[0] {
                     DebuggerCommand::TraceResize(number)

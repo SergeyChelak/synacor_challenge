@@ -14,6 +14,8 @@ pub struct Machine {
     input_buffer: Vec<u8>,
     is_running: bool,    
     token_buffer: Vec<DebugToken>,
+    trace_formatter: TraceFormatter,
+    trace: Vec<String>,
 }
 
 impl Machine {
@@ -26,6 +28,8 @@ impl Machine {
             input_buffer: Vec::new(),
             is_running: false,
             token_buffer: Vec::with_capacity(10),
+            trace_formatter: TraceFormatter::new(),
+            trace: Vec::new(),
         }
     }
 
@@ -83,7 +87,8 @@ impl Machine {
                 _ =>
                     panic!("Unhandled instruction {}", operation),
             }
-            // TODO: add executed instruction to buffer
+            let operation_trace = self.trace_formatter.format(&self.token_buffer);
+            self.trace.push(operation_trace);
             self.token_buffer.clear();
         }
     }
@@ -296,6 +301,7 @@ impl Machine {
             io::stdin().read_line(&mut buffer).unwrap();
             if buffer == "dbg\n" {
                 self.dbg_start_debugger();
+                buffer.clear();
                 io::stdin().read_line(&mut buffer).unwrap();
             } 
             for byte in buffer.as_bytes().iter().rev() {
@@ -307,6 +313,8 @@ impl Machine {
 
         let a = self.read_register_idx();
         self.write_register(a, ascii);
+
+        self.dbg_push_debug_token(DebugToken::Comment(format!(" '{}'", ascii as u8 as char)));
     }
 
     // 21: no operation
@@ -327,11 +335,56 @@ impl Machine {
             io::stdin().read_line(&mut buffer).unwrap();
             let cmd = parser.parse(&buffer);
             match cmd {
+                DebuggerCommand::TracePrint => self.dbg_trace_print(),
+                DebuggerCommand::TraceSizePrint => self.dbg_trace_size_print(),
+                DebuggerCommand::TraceClear => self.dbg_trace_clear(),
+                DebuggerCommand::StackPrint => self.dbg_stack_print(),
+                DebuggerCommand::StackSizePrint => self.dbg_stack_size_print(),
+                DebuggerCommand::RegistersPrint => self.dbg_registers_print(),
                 DebuggerCommand::Continue => break,
-
-                _ => println!("Unknow command. Try again"),
+                _ => println!("* Unknown command. Try again"),
             }            
         }
         println!("* resuming execution");
     }
+
+    fn dbg_registers_print(&self) {
+        let output = (0..self.register.len())
+            .map(|i| format!("reg{i}={}", self.register[i]))        
+            .collect::<Vec<String>>()
+            .join("   ");
+        println!("* {}", output);    
+    }
+
+    fn dbg_stack_size_print(&self) {
+        println!("* {}", self.stack.len());
+    }
+
+    fn dbg_stack_print(&self) {
+        let output = self.stack.iter()
+            .map(|value| format!("{value}"))
+            .collect::<Vec<String>>()
+            .join("  ");
+        println!("* {} <--", output);
+    }
+
+    fn dbg_trace_print(&self) {
+        if self.trace.is_empty() {
+            println!("* empty");
+        } else {
+            for line in self.trace.iter() {
+                println!("{line}");
+            }
+        }
+    }
+
+    fn dbg_trace_size_print(&self) {
+        println!("* {} records", self.trace.len());
+    }
+
+    fn dbg_trace_clear(&mut self) {
+        self.trace.clear();
+        println!("* Trace cleared");
+    }
+    
 }

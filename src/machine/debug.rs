@@ -18,12 +18,12 @@ impl DebugToken {
     }
 }
 
-pub struct DebugFormatter {
+pub struct TraceFormatter {
     instr_width: usize,
     value_width: usize,
 }
 
-impl DebugFormatter {
+impl TraceFormatter {
     pub fn new() -> Self {
         Self {
             instr_width: 50,
@@ -31,7 +31,7 @@ impl DebugFormatter {
         }
     }
 
-    pub fn format_debug_tokens(&self, tokens: &Vec<DebugToken>) -> String {
+    pub fn format(&self, tokens: &Vec<DebugToken>) -> String {
         let fmt_instr = self.format_instructions(tokens);
         let fmt_comments = self.format_comments(tokens);
         format!("{:width$} {}", fmt_instr, fmt_comments, width = self.instr_width)
