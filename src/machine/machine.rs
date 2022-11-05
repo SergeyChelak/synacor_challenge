@@ -98,10 +98,13 @@ impl Machine {
     fn read_value(&mut self) -> u16 {
         let value = self.read_next();
         if value < REGISTERS_OFFSET as u16 {
+            self.dbg_push_debug_token(DebugToken::Value(value, None));
             value
         } else {
             let register_idx = value as usize - REGISTERS_OFFSET;
-            self.register[register_idx]
+            let reg_value = self.register[register_idx];
+            self.dbg_push_debug_token(DebugToken::Value(reg_value, Some(register_idx)));
+            reg_value
         }
     }
 
@@ -133,23 +136,14 @@ impl Machine {
     #[inline]
     fn read_register_idx_unary_arg(&mut self) -> (usize, u16) {
         let a = self.read_register_idx();
-        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
-        
-        let b_idx = self.dbg_register_idx();
         let b = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
-
         (a, b)
     }
 
     #[inline]
     fn read_register_idx_binary_args(&mut self) -> (usize, u16, u16) {
         let (a, b) = self.read_register_idx_unary_arg();
-
-        let c_idx = self.dbg_register_idx();
         let c = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(c, c_idx));
-
         (a, b, c)
     }
 
@@ -167,9 +161,7 @@ impl Machine {
 
     // 2: push <a> onto the stack
     fn push(&mut self) {
-        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
         self.stack.push(a);
     }
 
@@ -202,10 +194,7 @@ impl Machine {
 
     // 7: if <a> is nonzero, jump to <b>
     fn jt(&mut self) {
-        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
-
         let b = self.read_next() as usize;
         self.dbg_push_debug_token(DebugToken::Address(b));
         if a != 0 {
@@ -215,10 +204,7 @@ impl Machine {
 
     // 8: if <a> is zero, jump to <b>
     fn jf(&mut self) {
-        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
-        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
-
         let b = self.read_next() as usize;
         self.dbg_push_debug_token(DebugToken::Address(b));
         if a == 0 {
@@ -317,16 +303,6 @@ impl Machine {
     }
 
     // -- debugger
-    #[inline]
-    fn dbg_register_idx(&self) -> Option<usize> {
-        let value = self.read_memory_at(self.cp);
-        if value < REGISTERS_OFFSET as u16 {
-            None
-        } else {
-            Some(value as usize - REGISTERS_OFFSET)
-        }
-    }
-
     fn dbg_push_debug_token(&mut self, token: DebugToken) {
         match token {
             DebugToken::EOP => {
