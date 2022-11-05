@@ -4,5 +4,10 @@ pub enum DebugToken {
     Value(u16, Option<usize>),  // value, optional register index
     RegisterIdx(usize),
     Comment(String),
-    EOP                         // end of operation
+}
+
+pub trait DebugOutput {
+    fn write(&self, tokens: &Vec<DebugToken>);
+
+    fn complete(&self);
 }

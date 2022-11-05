@@ -1,6 +1,6 @@
 use std::io;
 
-use super::debug::DebugToken;
+use super::debug::*;
 
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
@@ -14,10 +14,11 @@ pub struct Machine {
     input_buffer: Vec<u8>,
     is_running: bool,
     debug_buffer: Vec<DebugToken>,
+    debug_output: Option<Box<dyn DebugOutput>>,
 }
 
-impl Machine {
-    pub fn new(program: Vec<u8>) -> Self {
+impl<'a> Machine {
+    pub fn new(program: Vec<u8>, debug_output: Option<Box<dyn DebugOutput>>) -> Self {
         Machine { 
             memory: Self::setup_memory(program), 
             register: [0; REGISTERS_COUNT], 
@@ -26,6 +27,7 @@ impl Machine {
             input_buffer: Vec::new(),
             is_running: false,
             debug_buffer: Vec::new(),
+            debug_output
         }
     }
 
@@ -83,7 +85,13 @@ impl Machine {
                 _ =>
                     panic!("Unhandled instruction {}", operation),
             }
-            self.dbg_push_debug_token(DebugToken::EOP);
+            if let Some(debug_output) = self.debug_output.as_ref() {
+                debug_output.write(&self.debug_buffer);
+                self.debug_buffer.clear();
+            }
+        }
+        if let Some(debug_output) = self.debug_output.as_ref() {
+            debug_output.complete();
         }
     }
 
@@ -308,12 +316,6 @@ impl Machine {
 
     // -- debugger
     fn dbg_push_debug_token(&mut self, token: DebugToken) {
-        match token {
-            DebugToken::EOP => {
-                // TODO: format & write
-                self.debug_buffer.clear();                
-            },
-            _ => self.debug_buffer.push(token),
-        }            
+        self.debug_buffer.push(token)            
     }
 }

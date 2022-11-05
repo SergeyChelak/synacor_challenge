@@ -3,6 +3,7 @@ use std::io::{self, Error, ErrorKind, Read, BufRead};
 
 mod machine;
 use machine::machine::Machine;
+use machine::debug_writer::*;
 
 fn main() -> io::Result<()> {
     println!("* Rusty Virtual Machine *");
@@ -13,7 +14,7 @@ fn main() -> io::Result<()> {
     }
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
-    let mut machine = Machine::new(program);
+    let mut machine = Machine::new(program, Some(Box::new(StubDebugWriter::new())));
     // setting up optional script        
     if let Some(path) = args.get(2) {
         let mut script: Vec<String> = Vec::new();
