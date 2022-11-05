@@ -8,6 +8,7 @@ pub enum DebuggerCommand {
     StackSizePrint,             // shows amount of items in stack
     StackPrint,                 // prints stack's values
     TracePrint,                 // prints latest execution trace
+    TraceEnabled(bool),         // enables/disables execution trace
     TraceSizePrint,             // prints number of operations in trace
     TraceResize(usize),         // updates trace buffer size (in lines)
     TraceClear,                 // removes all records from trace
@@ -29,6 +30,7 @@ enum CommandId {
     StackSizePrint,
     StackPrint,
     TracePrint,
+    TraceEnabled,
     TraceSizePrint,
     TraceResize,
     TraceClear,
@@ -88,6 +90,7 @@ impl DebugCommandParser {
             (CommandId::StackPrint, vec![Rule::EqualStr(DBG_CMD_STACK)]),
 
             (CommandId::TracePrint, vec![Rule::EqualStr(DBG_CMD_TRACE)]),
+            (CommandId::TraceEnabled, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::AnyBool]),
             (CommandId::TraceSizePrint, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE)]),
             (CommandId::TraceResize, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE), Rule::AnyNumber]),
             (CommandId::TraceClear, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_CLEAR)]),
@@ -177,6 +180,12 @@ impl DebugCommandParser {
             CommandId::StackSizePrint => DebuggerCommand::StackSizePrint,
             CommandId::StackPrint => DebuggerCommand::StackPrint,
             CommandId::TracePrint => DebuggerCommand::TracePrint,
+            CommandId::TraceEnabled => 
+                if let Parameter::Bool(is_enabled) = params[0] {
+                    DebuggerCommand::TraceEnabled(is_enabled)
+                } else {
+                    panic!()
+                },
             CommandId::TraceSizePrint => DebuggerCommand::TraceSizePrint,
             CommandId::TraceResize =>
                 if let Parameter::Usize(number) = params[0] {

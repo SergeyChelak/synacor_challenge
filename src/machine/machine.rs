@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io;
 use super::debug::*;
 use super::command_parser::*;
@@ -15,7 +16,10 @@ pub struct Machine {
     is_running: bool,    
     token_buffer: Vec<DebugToken>,
     trace_formatter: TraceFormatter,
+    is_trace_enabled: bool,
     trace: Vec<String>,
+    breakpoint: HashSet<usize>,
+    is_breakpoints_enabled: bool,
 }
 
 impl Machine {
@@ -29,7 +33,10 @@ impl Machine {
             is_running: false,
             token_buffer: Vec::with_capacity(10),
             trace_formatter: TraceFormatter::new(),
+            is_trace_enabled: false,
             trace: Vec::new(),
+            breakpoint: HashSet::new(),
+            is_breakpoints_enabled: true,
         }
     }
 
@@ -87,9 +94,15 @@ impl Machine {
                 _ =>
                     panic!("Unhandled instruction {}", operation),
             }
-            let operation_trace = self.trace_formatter.format(&self.token_buffer);
-            self.trace.push(operation_trace);
-            self.token_buffer.clear();
+            if self.is_breakpoints_enabled && self.breakpoint.contains(&self.cp) {
+                println!("* Breakpoint at {}", self.cp);
+                self.dbg_start_debugger();
+            }
+            if self.is_trace_enabled {
+                let operation_trace = self.trace_formatter.format(&self.token_buffer);
+                self.trace.push(operation_trace);
+                self.token_buffer.clear();
+            }
         }
     }
 
@@ -324,7 +337,9 @@ impl Machine {
 
     // -- debugger
     fn dbg_push_debug_token(&mut self, token: DebugToken) {
-        self.token_buffer.push(token)            
+        if self.is_trace_enabled {
+            self.token_buffer.push(token);
+        }
     }
 
     fn dbg_start_debugger(&mut self) {
@@ -335,7 +350,12 @@ impl Machine {
             io::stdin().read_line(&mut buffer).unwrap();
             let cmd = parser.parse(&buffer);
             match cmd {                
+                DebuggerCommand::BreakpointsPrint => self.dbg_breakpoints_print(),
+                DebuggerCommand::BreakpointAdd(address) => self.dbg_breakpoint_add(address),
+                DebuggerCommand::BreakpointRemove(address) => self.dbg_breakpoint_remove(address),
+                DebuggerCommand::BreakpointsEnabled(is_enabled) => self.dbg_breakpoint_enable(is_enabled),
                 DebuggerCommand::TracePrint => self.dbg_trace_print(),
+                DebuggerCommand::TraceEnabled(is_enabled) => self.dbg_trace_enable(is_enabled),
                 DebuggerCommand::TraceSizePrint => self.dbg_trace_size_print(),
                 DebuggerCommand::TraceClear => self.dbg_trace_clear(),
                 DebuggerCommand::StackPrint => self.dbg_stack_print(),
@@ -347,6 +367,35 @@ impl Machine {
             }            
         }
         println!("* resuming execution");
+    }
+
+    fn dbg_breakpoints_print(&self) {
+        println!("* Break points enabled: {}", if self.is_breakpoints_enabled { "YES" } else { "NO"} );
+        let output = self.breakpoint.iter()
+            .map(|address| format!("@{address}"))        
+            .collect::<Vec<String>>()
+            .join("   ");
+        println!("{}", output);
+    }
+
+    fn dbg_breakpoint_add(&mut self, address: usize) {
+        self.breakpoint.insert(address);
+        println!("* added breakpoint at {address}");
+    }
+
+    fn dbg_breakpoint_remove(&mut self, address: usize) {
+        self.breakpoint.remove(&address);
+        println!("* breakpoint at {address} removed");
+    }
+
+    fn dbg_breakpoint_enable(&mut self, is_enabled: bool) {
+        self.is_breakpoints_enabled = is_enabled;
+        let output = if is_enabled {
+            "Breakpoints are enabled"
+        } else {
+            "All breakpoins are disabled"
+        };
+        println!("* {}", output);
     }
 
     fn dbg_registers_print(&self) {
@@ -377,6 +426,17 @@ impl Machine {
                 println!("{line}");
             }
         }
+        println!("* Trace enabled: {}", if self.is_trace_enabled { "YES" } else { "NO"} );
+    }
+
+    fn dbg_trace_enable(&mut self, is_enabled: bool) {
+        self.is_trace_enabled = is_enabled;
+        let output = if is_enabled {
+            "Trace enabled"
+        } else {
+            "Trace disabled"
+        };
+        println!("* {}", output);
     }
 
     fn dbg_trace_size_print(&self) {
