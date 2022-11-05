@@ -14,7 +14,7 @@ fn main() -> io::Result<()> {
     }
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
-    let mut machine = Machine::new(program, Some(Box::new(StubDebugWriter::new())));
+    let mut machine = Machine::new(program, None);
     // setting up optional script        
     if let Some(path) = args.get(2) {
         let mut script: Vec<String> = Vec::new();

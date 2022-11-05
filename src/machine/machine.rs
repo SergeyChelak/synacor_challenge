@@ -288,7 +288,6 @@ impl<'a> Machine {
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
         print!("{}", arg);
-        self.dbg_push_debug_token(DebugToken::Comment(format!("{arg}")));
     }
 
     // 20: read a character from the terminal and write its ascii code to <a>

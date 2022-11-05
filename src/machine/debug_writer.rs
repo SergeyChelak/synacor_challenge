@@ -1,11 +1,11 @@
 use super::debug::*;
 
 // fake writer
-pub struct StubDebugWriter {
+pub struct FileDebugWriter {
     formatter: DebugFormatter,
 }
 
-impl StubDebugWriter {
+impl FileDebugWriter {
     pub fn new() -> Self {
         Self {
             formatter: DebugFormatter::new(),
@@ -13,26 +13,12 @@ impl StubDebugWriter {
     }
 }
 
-impl DebugOutput for StubDebugWriter {
+impl DebugOutput for FileDebugWriter {
     fn write(&self, tokens: &Vec<DebugToken>) {
         println!("{}", self.formatter.format_debug_tokens(tokens));
     }
 
     fn complete(&self) {
         //
-    }
-}
-
-pub struct FileDebugWriter {
-
-}
-
-impl DebugOutput for FileDebugWriter {
-    fn write(&self, tokens: &Vec<DebugToken>) {
-        todo!()
-    }
-
-    fn complete(&self) {
-        todo!()
     }
 }
