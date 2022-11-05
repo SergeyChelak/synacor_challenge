@@ -17,6 +17,7 @@ pub enum DebuggerCommand {
     Unknown,
 }
 
+#[derive(Debug)]
 enum CommandId {
     BreakpointsPrint,
     BreakpointAdd,
@@ -58,6 +59,8 @@ const DBG_CMD_REMOVE: &str = "rem";
 const DBG_CMD_WRITE: &str = "write";
 const DBG_CMD_SIZE: &str = "size";
 const DBG_CMD_CLEAR: &str = "cls";
+const DBG_CMD_TRUE: &str = "true";
+const DBG_CMD_FALSE: &str = "false";
 
 pub struct DebugCommandParser {
     rule_registry: Vec<(CommandId, Vec<Rule>)>
@@ -99,28 +102,52 @@ impl DebugCommandParser {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         let inp_count = tokens.len();
 
-        for data in self.rule_registry.iter() {
+        'outer: for data in self.rule_registry.iter() {
             let (cmd_id, rules) = data;
             if rules.len() != inp_count {
                 continue;
             }            
+            let mut params: Vec<Parameter> = Vec::new();
             for pos in 0..inp_count {
                 let token = tokens[pos];
                 let rule = &rules[pos];
-                if let Some(params) = self.check_matching(rule, token) {
-                    return self.build_command(cmd_id, &params);
+                if !self.is_matching(rule, token, &mut params) {                    
+                    continue 'outer;
                 }
             }
+            return self.build_command(cmd_id, &params);
         }
         DebuggerCommand::Unknown
     }
 
-    fn check_matching(&self, rule: &Rule, token: &str) -> Option<Vec<Parameter>> {
-        todo!()
+    fn is_matching(&self, rule: &Rule, token: &str, param_list: &mut Vec<Parameter>) -> bool {
+        match *rule {
+            Rule::EqualStr(value) => value == token,
+            Rule::AnyBool => 
+                if token == DBG_CMD_TRUE {
+                    param_list.push(Parameter::Bool(true));
+                    true
+                } else if token == DBG_CMD_FALSE {
+                    param_list.push(Parameter::Bool(false));
+                    true
+                } else {
+                    false
+                },
+            Rule::AnyNumber => {
+                if let Ok(value) = token.parse::<usize>() {
+                    param_list.push(Parameter::Usize(value));
+                    true
+                } else {
+                    false
+                }
+            }                
+        }
     }
 
     fn build_command(&self, cmd_id: &CommandId, params: &Vec<Parameter>) -> DebuggerCommand {
-        todo!()
+        println!("Parsed command: {:?}", cmd_id);
+        //todo!()
+        DebuggerCommand::Unknown
     }
 
 

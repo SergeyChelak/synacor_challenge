@@ -321,9 +321,9 @@ impl Machine {
 
     fn dbg_start_debugger(&mut self) {
         println!("* interactive debugger");        
-        let mut parser = DebugCommandParser::new();
-        let mut buffer = String::new();
+        let parser = DebugCommandParser::new();        
         loop {
+            let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).unwrap();
             let cmd = parser.parse(&buffer);
             match cmd {
