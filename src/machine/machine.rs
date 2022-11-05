@@ -12,9 +12,10 @@ pub struct Machine {
     stack: Vec<u16>,
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
-    is_running: bool,
+    is_running: bool,    
     debug_buffer: Vec<DebugToken>,
     debug_output: Option<Box<dyn DebugOutput>>,
+    skip_cycles: usize,
 }
 
 impl<'a> Machine {
@@ -27,7 +28,8 @@ impl<'a> Machine {
             input_buffer: Vec::new(),
             is_running: false,
             debug_buffer: Vec::new(),
-            debug_output
+            debug_output,
+            skip_cycles: 0,
         }
     }
 
@@ -50,6 +52,10 @@ impl<'a> Machine {
             }            
         }
         self.input_buffer = input_buffer;
+    }
+
+    pub fn set_skip_cycles(&mut self, cycles: usize) {
+        self.skip_cycles = cycles;
     }
 
     // -- main loop
@@ -88,6 +94,9 @@ impl<'a> Machine {
             if let Some(debug_output) = self.debug_output.as_ref() {
                 debug_output.write(&self.debug_buffer);
                 self.debug_buffer.clear();
+            }
+            for _ in 0..self.skip_cycles {
+                // do nothing
             }
         }
         if let Some(debug_output) = self.debug_output.as_ref() {

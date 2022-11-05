@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
     }
     
     println!();
-    
+    // machine.set_skip_cycles(250);
     machine.run();
     println!("\n* Goodbye *");
     Ok(())
