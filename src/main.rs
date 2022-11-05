@@ -2,8 +2,7 @@ use std::fs::File;
 use std::io::{self, Error, ErrorKind, Read, BufRead};
 
 mod machine;
-
-use machine::Machine;
+use machine::machine::Machine;
 
 fn main() -> io::Result<()> {
     println!("* Rusty Virtual Machine *");

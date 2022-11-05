@@ -1,5 +1,7 @@
 use std::io;
 
+use super::debug::DebugToken;
+
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
 const MEMORY_SIZE: usize = 1 << 15; // words
@@ -11,6 +13,7 @@ pub struct Machine {
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
     is_running: bool,
+    debug_buffer: Vec<DebugToken>,
 }
 
 impl Machine {
@@ -22,6 +25,7 @@ impl Machine {
             cp: 0,
             input_buffer: Vec::new(),
             is_running: false,
+            debug_buffer: Vec::new(),
         }
     }
 
@@ -50,8 +54,10 @@ impl Machine {
     pub fn run(&mut self) {
         self.is_running = true;
         while self.is_running {
-            let instruction = self.read_next();
-            match instruction {
+            self.dbg_push_debug_token(DebugToken::Address(self.cp));
+            let operation = self.read_next();
+            self.dbg_push_debug_token(DebugToken::Operation(operation));
+            match operation {
                  0 => self.halt(),
                  1 => self.set(),
                  2 => self.push(),
@@ -75,8 +81,9 @@ impl Machine {
                 20 => self.in_op(),
                 21 => self.noop(),
                 _ =>
-                    panic!("Unhandled instruction {}", instruction),
+                    panic!("Unhandled instruction {}", operation),
             }
+            self.dbg_push_debug_token(DebugToken::EOP);
         }
     }
 
@@ -126,20 +133,29 @@ impl Machine {
     // 1:  set register <a> to the value of <b>
     fn set(&mut self) {
         let a = self.read_register_idx();
+        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
+        
+        let b_idx = self.dbg_register_idx();
         let b = self.read_value();
+        self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
         self.register[a] = b;
     }
 
     // 2: push <a> onto the stack
     fn push(&mut self) {
+        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
+        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
         self.stack.push(a);
     }
 
     // 3: remove the top element from the stack and write it into <a>; empty stack = error
     fn pop(&mut self) {
         let a = self.read_register_idx();
-        self.register[a] = self.stack.pop().unwrap();        
+        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
+        let value = self.stack.pop().unwrap();
+        self.register[a] = value;
+        self.dbg_push_debug_token(DebugToken::Comment(format!("pop value {value}")));
     }
 
     // 4: set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
@@ -281,5 +297,26 @@ impl Machine {
     // 21: no operation
     fn noop(&self) {
         // no op
+    }
+
+    // -- debugger
+    #[inline]
+    fn dbg_register_idx(&self) -> Option<usize> {
+        let value = self.read_memory_at(self.cp);
+        if value < REGISTERS_OFFSET as u16 {
+            None
+        } else {
+            Some(value as usize - REGISTERS_OFFSET)
+        }
+    }
+
+    fn dbg_push_debug_token(&mut self, token: DebugToken) {
+        match token {
+            DebugToken::EOP => {
+                // TODO: format & write
+                self.debug_buffer.clear();                
+            },
+            _ => self.debug_buffer.push(token),
+        }            
     }
 }
