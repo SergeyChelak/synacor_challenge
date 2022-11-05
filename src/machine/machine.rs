@@ -155,23 +155,41 @@ impl Machine {
         self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
         let value = self.stack.pop().unwrap();
         self.register[a] = value;
-        self.dbg_push_debug_token(DebugToken::Comment(format!("pop value {value}")));
+        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{a}] = {value}")));
     }
 
     // 4: set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
     fn eq(&mut self) {
         let a = self.read_register_idx();
+        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
+        
+        let b_idx = self.dbg_register_idx();
         let b = self.read_value();
+        self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
+
+        let c_idx = self.dbg_register_idx();
         let c = self.read_value();
-        self.register[a] = if b == c { 1 } else { 0 }
+        self.dbg_push_debug_token(DebugToken::Value(c, c_idx));
+
+        self.register[a] = if b == c { 1 } else { 0 };
+        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{a}] = {}", self.register[a])));
     }
 
     // 5: set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
     fn gt(&mut self) {
         let a = self.read_register_idx();
+        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
+        
+        let b_idx = self.dbg_register_idx();
         let b = self.read_value();
+        self.dbg_push_debug_token(DebugToken::Value(b, b_idx));
+
+        let c_idx = self.dbg_register_idx();
         let c = self.read_value();
-        self.register[a] = if b > c { 1 } else { 0 }
+        self.dbg_push_debug_token(DebugToken::Value(c, c_idx));
+        
+        self.register[a] = if b > c { 1 } else { 0 };
+        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{a}] = {}", self.register[a])));
     }
 
     // 6: jump to <a>
