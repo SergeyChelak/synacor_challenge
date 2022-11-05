@@ -14,30 +14,36 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(program: Vec<u8>, script: Vec<String>) -> Self {
+    pub fn new(program: Vec<u8>) -> Self {
+        Machine { 
+            memory: Self::setup_memory(program), 
+            register: [0; REGISTERS_COUNT], 
+            stack: Vec::new(),
+            cp: 0,
+            input_buffer: Vec::new(),
+            is_running: false,
+        }
+    }
+
+    fn setup_memory(program: Vec<u8>) -> [u16; MEMORY_SIZE] {
         assert_eq!(program.len() % 2, 0, "Incorrect binary size");
         assert!(program.len() / 2 <= MEMORY_SIZE, "Binary is too big to fit the memory size");
         let mut memory: [u16; MEMORY_SIZE] = [0; MEMORY_SIZE];
         for i in (0..program.len()).step_by(2) {
             memory[i >> 1] = u16::from_le_bytes([program[i], program[i + 1]]);
-        }        
-        
+        }
+        memory
+    }
+
+    pub fn write_to_input_buffer(&mut self, strings: &Vec<String>) {
         let mut input_buffer: Vec<u8> = Vec::new();
-        for str in script.iter().rev() {            
+        for str in strings.iter().rev() {            
             input_buffer.push('\n' as u8);
             for byte in str.as_bytes().iter().rev() {
                 input_buffer.push(*byte);
             }            
         }
-
-        Machine { 
-            memory, 
-            register: [0; REGISTERS_COUNT], 
-            stack: Vec::new(),
-            cp: 0,
-            input_buffer,
-            is_running: false,
-        }
+        self.input_buffer = input_buffer;
     }
 
     // -- main loop
