@@ -18,7 +18,7 @@ pub struct Machine {
     skip_cycles: usize,
 }
 
-impl<'a> Machine {
+impl Machine {
     pub fn new(program: Vec<u8>, debug_output: Option<Box<dyn DebugOutput>>) -> Self {
         Machine { 
             memory: Self::setup_memory(program), 
