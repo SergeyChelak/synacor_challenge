@@ -370,7 +370,7 @@ impl Machine {
     }
 
     fn dbg_breakpoints_print(&self) {
-        println!("* Break points enabled: {}", if self.is_breakpoints_enabled { "YES" } else { "NO"} );
+        println!("* break points enabled: {}", if self.is_breakpoints_enabled { "YES" } else { "NO"} );
         let output = self.breakpoint.iter()
             .map(|address| format!("@{address}"))        
             .collect::<Vec<String>>()
@@ -391,9 +391,9 @@ impl Machine {
     fn dbg_breakpoint_enable(&mut self, is_enabled: bool) {
         self.is_breakpoints_enabled = is_enabled;
         let output = if is_enabled {
-            "Breakpoints are enabled"
+            "breakpoints are enabled"
         } else {
-            "All breakpoins are disabled"
+            "all breakpoins are disabled"
         };
         println!("* {}", output);
     }
@@ -407,7 +407,7 @@ impl Machine {
     }
 
     fn dbg_stack_size_print(&self) {
-        println!("* {}", self.stack.len());
+        println!("* {} items in the stack", self.stack.len());
     }
 
     fn dbg_stack_print(&self) {
@@ -415,7 +415,7 @@ impl Machine {
             .map(|value| format!("{value}"))
             .collect::<Vec<String>>()
             .join("  ");
-        println!("* {} <--", output);
+        println!("* {} <-- TOP", output);
     }
 
     fn dbg_trace_print(&self) {
@@ -426,30 +426,26 @@ impl Machine {
                 println!("{line}");
             }
         }
-        println!("* Trace enabled: {}", if self.is_trace_enabled { "YES" } else { "NO"} );
+        println!("* trace enabled: {}", if self.is_trace_enabled { "YES" } else { "NO"} );
     }
 
     fn dbg_trace_enable(&mut self, is_enabled: bool) {
         self.is_trace_enabled = is_enabled;
-        let output = if is_enabled {
-            "Trace enabled"
-        } else {
-            "Trace disabled"
-        };
-        println!("* {}", output);
+        println!("* trace {}", if is_enabled { "enabled" } else { "disabled" });
     }
 
     fn dbg_trace_size_print(&self) {
-        println!("* {} records", self.trace.len());
+        println!("* {} lines", self.trace.len());
     }
 
     fn dbg_trace_clear(&mut self) {
         self.trace.clear();
-        println!("* Trace cleared");
+        println!("* trace cleared");
     }
 
     fn dbg_registers_write(&mut self, reg_idx: usize, value: u16) {
         self.register[reg_idx] = value;
+        println!("* register [{reg_idx}] value updated");
     }
     
 }
