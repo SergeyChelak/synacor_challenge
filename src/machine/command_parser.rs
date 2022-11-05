@@ -6,7 +6,7 @@ pub enum DebuggerCommand {
     RegistersPrint,             // prints registers state
     RegisterWrite(usize, u16),  // writes u16 value to specified register
     StackSizePrint,             // shows amount of items in stack
-    StrackPrint,                // prints stack's values
+    StackPrint,                // prints stack's values
     TracePrint,                 // prints latest execution trace
     TraceResize(usize),         // updates trace buffer size (in lines)
     TraceClear,                 // removes all records from trace
@@ -26,7 +26,7 @@ enum CommandId {
     RegistersPrint,
     RegisterWrite,
     StackSizePrint,
-    StrackPrint,
+    StackPrint,
     TracePrint,
     TraceResize,
     TraceClear,
@@ -84,7 +84,7 @@ impl DebugCommandParser {
             (CommandId::RegisterWrite, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber]),
 
             (CommandId::StackSizePrint, vec![Rule::EqualStr(DBG_CMD_STACK), Rule::EqualStr(DBG_CMD_SIZE)]),
-            (CommandId::StrackPrint, vec![Rule::EqualStr(DBG_CMD_STACK)]),
+            (CommandId::StackPrint, vec![Rule::EqualStr(DBG_CMD_STACK)]),
 
             (CommandId::TracePrint, vec![Rule::EqualStr(DBG_CMD_TRACE)]),
             (CommandId::TraceResize, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE), Rule::AnyNumber]),
@@ -145,9 +145,53 @@ impl DebugCommandParser {
     }
 
     fn build_command(&self, cmd_id: &CommandId, params: &Vec<Parameter>) -> DebuggerCommand {
-        println!("Parsed command: {:?}", cmd_id);
-        //todo!()
-        DebuggerCommand::Unknown
+        match cmd_id {
+            CommandId::BreakpointsPrint => DebuggerCommand::BreakpointsPrint,
+            CommandId::BreakpointAdd => 
+                if let Parameter::Usize(number) = params[0] {
+                    DebuggerCommand::BreakpointAdd(number)
+                } else {
+                    panic!()
+                },
+            CommandId::BreakpointRemove => 
+                if let Parameter::Usize(number) = params[0] {
+                    DebuggerCommand::BreakpointRemove(number)
+                } else {
+                    panic!()
+                },
+            CommandId::BreakpointsEnabled =>
+                if let Parameter::Bool(is_enabled) = params[0] {
+                    DebuggerCommand::BreakpointsEnabled(is_enabled)
+                } else {
+                    panic!()
+                },
+            CommandId::RegistersPrint => DebuggerCommand::RegistersPrint,
+            CommandId::RegisterWrite =>
+                if let (Parameter::Usize(idx), Parameter::Usize(value)) = (&params[0], &params[1]) {
+                    DebuggerCommand::RegisterWrite(*idx, *value as u16)
+                } else {
+                    panic!()
+                }
+            CommandId::StackSizePrint => DebuggerCommand::StackSizePrint,
+            CommandId::StackPrint => DebuggerCommand::StackPrint,
+            CommandId::TracePrint => DebuggerCommand::TracePrint,
+            CommandId::TraceResize =>
+                if let Parameter::Usize(number) = params[0] {
+                    DebuggerCommand::TraceResize(number)
+                } else {
+                    panic!()
+                },
+            CommandId::TraceClear => DebuggerCommand::TraceClear,
+            CommandId::CodePointerPrint => DebuggerCommand::CodePointerPrint,
+            CommandId::CodePointerWrite =>
+                if let Parameter::Usize(number) = params[0] {
+                    DebuggerCommand::CodePointerWrite(number)
+                } else {
+                    panic!()
+                },
+            CommandId::ConsoleClear => DebuggerCommand::ConsoleClear,
+            CommandId::Continue => DebuggerCommand::Continue,
+        }        
     }
 
 
