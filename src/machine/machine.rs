@@ -194,25 +194,34 @@ impl Machine {
 
     // 6: jump to <a>
     fn jmp(&mut self) {
-        let jmp_addr = self.read_next();
+        let jmp_addr = self.read_next();        
         self.cp = jmp_addr as usize;
+        self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
 
     // 7: if <a> is nonzero, jump to <b>
     fn jt(&mut self) {
+        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
-        let b = self.read_next();
+        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
+
+        let b = self.read_next() as usize;
+        self.dbg_push_debug_token(DebugToken::Address(b));
         if a != 0 {
-            self.cp = b as usize;
+            self.cp = b;
         }
     }
 
     // 8: if <a> is zero, jump to <b>
     fn jf(&mut self) {
+        let a_idx = self.dbg_register_idx();
         let a = self.read_value();
-        let b = self.read_next();
+        self.dbg_push_debug_token(DebugToken::Value(a, a_idx));
+
+        let b = self.read_next() as usize;
+        self.dbg_push_debug_token(DebugToken::Address(b));
         if a == 0 {
-            self.cp = b as usize;
+            self.cp = b;
         }
     }
 
