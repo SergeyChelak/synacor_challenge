@@ -82,7 +82,7 @@ impl DebugCommandParser {
             (CommandId::BreakpointsEnabled, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::AnyBool]),                                   
 
             (CommandId::RegistersPrint, vec![Rule::EqualStr(DBG_CMD_REGISTER)]),
-            (CommandId::RegisterWrite, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber]),
+            (CommandId::RegisterWrite, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber, Rule::AnyNumber]),
 
             (CommandId::StackSizePrint, vec![Rule::EqualStr(DBG_CMD_STACK), Rule::EqualStr(DBG_CMD_SIZE)]),
             (CommandId::StackPrint, vec![Rule::EqualStr(DBG_CMD_STACK)]),

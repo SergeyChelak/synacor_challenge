@@ -334,13 +334,14 @@ impl Machine {
             let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).unwrap();
             let cmd = parser.parse(&buffer);
-            match cmd {
+            match cmd {                
                 DebuggerCommand::TracePrint => self.dbg_trace_print(),
                 DebuggerCommand::TraceSizePrint => self.dbg_trace_size_print(),
                 DebuggerCommand::TraceClear => self.dbg_trace_clear(),
                 DebuggerCommand::StackPrint => self.dbg_stack_print(),
                 DebuggerCommand::StackSizePrint => self.dbg_stack_size_print(),
                 DebuggerCommand::RegistersPrint => self.dbg_registers_print(),
+                DebuggerCommand::RegisterWrite(idx, value) => self.dbg_registers_write(idx, value),
                 DebuggerCommand::Continue => break,
                 _ => println!("* Unknown command. Try again"),
             }            
@@ -385,6 +386,10 @@ impl Machine {
     fn dbg_trace_clear(&mut self) {
         self.trace.clear();
         println!("* Trace cleared");
+    }
+
+    fn dbg_registers_write(&mut self, reg_idx: usize, value: u16) {
+        self.register[reg_idx] = value;
     }
     
 }
