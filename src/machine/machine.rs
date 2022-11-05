@@ -1,5 +1,6 @@
 use std::io;
 use super::debug::*;
+use super::command_parser::*;
 
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
@@ -319,15 +320,18 @@ impl Machine {
     }
 
     fn dbg_start_debugger(&mut self) {
-        println!("* Debugger *");        
+        println!("* interactive debugger");        
+        let mut parser = DebugCommandParser::new();
         let mut buffer = String::new();
         loop {
             io::stdin().read_line(&mut buffer).unwrap();
-            if buffer == "cnt\n" {
-                break;
-            }
-            println!("Unknow command. Try again");
+            let cmd = parser.parse(&buffer);
+            match cmd {
+                DebuggerCommand::Continue => break,
+
+                _ => println!("Unknow command. Try again"),
+            }            
         }
-        println!("* Continue execution *");
+        println!("* resuming execution");
     }
 }
