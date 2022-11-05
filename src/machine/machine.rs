@@ -250,14 +250,13 @@ impl Machine {
 
     // 15: read memory at address <b> and write it to <a>
     fn rmem(&mut self) {
-        let a = self.read_register_idx();
-        let b = self.read_value();
-        self.register[a] = self.read_memory_at(b as usize)
+        let (a, b) = self.read_register_idx_unary_arg();
+        self.write_register(a, self.read_memory_at(b as usize));
     }
 
     // 16: write the value from <b> into memory at address <a>
     fn wmem(&mut self) {
-        let a = self.read_value() as usize; // addr
+        let a = self.read_value() as usize; // addr!
         let b = self.read_value();
         self.write_memory_at(a, b);
     }
@@ -267,18 +266,21 @@ impl Machine {
         let jmp_addr = self.read_value();
         self.stack.push(self.cp as u16);
         self.cp = jmp_addr as usize;
+        self.dbg_push_debug_token(DebugToken::Comment(format!("jump to {jmp_addr}")));
     }
 
     // 18: remove the top element from the stack and jump to it; empty stack = halt
     fn ret(&mut self) {
-        let jmp_addr = self.stack.pop().unwrap();
-        self.cp = jmp_addr as usize;
+        let jmp_addr = self.stack.pop().unwrap();        
+        self.cp = jmp_addr as usize;        
+        self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
     
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
         print!("{}", arg);
+        self.dbg_push_debug_token(DebugToken::Comment(format!("{arg}")));
     }
 
     // 20: read a character from the terminal and write its ascii code to <a>
@@ -293,8 +295,10 @@ impl Machine {
             }
         }
         let ascii = self.input_buffer.pop().unwrap() as u16;
+        self.dbg_push_debug_token(DebugToken::Value(ascii, None));
+
         let a = self.read_register_idx();
-        self.register[a] = ascii;
+        self.write_register(a, ascii);
     }
 
     // 21: no operation
