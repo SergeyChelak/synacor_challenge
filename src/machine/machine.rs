@@ -327,7 +327,13 @@ impl Machine {
         let a = self.read_register_idx();
         self.write_register(a, ascii);
 
-        self.dbg_push_debug_token(DebugToken::Comment(format!(" '{}'", ascii as u8 as char)));
+        {
+            let chr = ascii as u8 as char;
+            if chr.is_alphanumeric() {
+                self.dbg_push_debug_token(DebugToken::Comment(format!(" '{chr}'", )));
+            }
+        }
+        
     }
 
     // 21: no operation
