@@ -13,16 +13,21 @@ fn main() -> io::Result<()> {
     }
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
-    let mut machine = Machine::new(program);
-    // setting up optional script        
+    let machine = Machine::new(program);
+    if let Err(error) = machine {
+        println!("Failed to setup machine with error {:?}", error);
+        return Ok(());
+    }
+    let mut machine = machine.unwrap();
+    // setting up optional script
     if let Some(path) = args.get(2) {
         let mut script: Vec<String> = Vec::new();
         load_script(path, &mut script)?;
         println!("{} commands loaded", script.len());
-        //         
+        //
         machine.write_to_input_buffer(&script);
     }
-    
+
     println!();
     machine.run();
     println!("\n-- Execution completed");

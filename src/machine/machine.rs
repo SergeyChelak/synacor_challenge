@@ -13,6 +13,8 @@ pub enum MachineError {
     PopOnEmptyStack,
     EmptyInputBuffer,
     InputBufferError(io::Error),
+    NotEnoughMemory(usize),         // program size
+    InvalidProgramSize(usize),
 }
 
 pub struct Machine {
@@ -25,28 +27,30 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(program: Vec<u8>) -> Self {
-        Machine {
-            memory: Self::setup_memory(program),
+    pub fn new(program: Vec<u8>) -> Result<Self, MachineError> {
+        Ok(Machine {
+            memory: Self::setup_memory(program)?,
             register: [0; REGISTERS_COUNT],
             stack: Vec::new(),
             cp: 0,
             input_buffer: Vec::new(),
             is_running: false,
-        }
+        })
     }
 
-    fn setup_memory(program: Vec<u8>) -> [u16; MEMORY_SIZE] {
-        assert_eq!(program.len() % 2, 0, "Incorrect binary size");
-        assert!(
-            program.len() / 2 <= MEMORY_SIZE,
-            "Binary is too big to fit the memory size"
-        );
+    fn setup_memory(program: Vec<u8>) -> Result<[u16; MEMORY_SIZE], MachineError> {
+        let len = program.len();
+        if program.len() % 2 != 0 {
+            return Err(MachineError::InvalidProgramSize(len));
+        }
+        if program.len() / 2 > MEMORY_SIZE {
+            return Err(MachineError::NotEnoughMemory(len));
+        }
         let mut memory: [u16; MEMORY_SIZE] = [0; MEMORY_SIZE];
-        for i in (0..program.len()).step_by(2) {
+        for i in (0..len).step_by(2) {
             memory[i >> 1] = u16::from_le_bytes([program[i], program[i + 1]]);
         }
-        memory
+        Ok(memory)
     }
 
     pub fn write_to_input_buffer(&mut self, strings: &Vec<String>) {
