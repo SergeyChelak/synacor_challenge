@@ -63,6 +63,11 @@ impl Machine {
 
     // -- main loop
     pub fn run(&mut self) {
+        // hack
+        // self.memory[5485] = 6;
+        // self.memory[5489] = 21;
+        // self.memory[5490] = 21;
+
         self.is_running = true;
         while self.is_running {
             self.dbg_push_debug_token(DebugToken::Address(self.cp));
@@ -91,17 +96,22 @@ impl Machine {
                 19 => self.out(),
                 20 => self.in_op(),
                 21 => self.noop(),
-                _ =>
-                    panic!("Unhandled instruction {}", operation),
+                _ => {
+                    if self.is_trace_enabled {
+                        self.dbg_trace_print();
+                    }
+                    panic!("Unhandled instruction {}", operation);
+                },
+            }            
+            if self.is_trace_enabled {
+                let operation_trace = self.trace_formatter.format(&self.token_buffer);
+                self.trace.push(operation_trace);
+                // println!("{}", operation_trace);
+                self.token_buffer.clear();                
             }
             if self.is_breakpoints_enabled && self.breakpoint.contains(&self.cp) {
                 println!("* Breakpoint at {}", self.cp);
                 self.dbg_start_debugger();
-            }
-            if self.is_trace_enabled {
-                let operation_trace = self.trace_formatter.format(&self.token_buffer);
-                self.trace.push(operation_trace);
-                self.token_buffer.clear();
             }
         }
     }
