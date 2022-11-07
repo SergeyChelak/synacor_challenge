@@ -50,7 +50,12 @@ impl Machine {
     pub fn run(&mut self) {
         self.is_running = true;
         while self.is_running {
-            let operation = self.read_next();
+            self.perform_operation();
+        }
+    }
+
+    fn perform_operation(&mut self) {
+        let operation = self.read_next();
             match operation {
                  0 => self.halt(),
                  1 => self.set(),
@@ -76,7 +81,6 @@ impl Machine {
                 21 => self.noop(),
                 _ => panic!("Unhandled instruction {}", operation),
             }
-        }
     }
 
     #[inline]
