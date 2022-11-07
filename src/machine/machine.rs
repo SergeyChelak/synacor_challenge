@@ -1,7 +1,4 @@
-use std::collections::HashSet;
 use std::io;
-use super::debug::*;
-use super::command_parser::*;
 
 const REGISTERS_COUNT: usize = 8;
 const REGISTERS_OFFSET: usize = 32768;
@@ -14,12 +11,6 @@ pub struct Machine {
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
     is_running: bool,    
-    token_buffer: Vec<DebugToken>,
-    trace_formatter: TraceFormatter,
-    is_trace_enabled: bool,
-    trace: Vec<String>,
-    breakpoint: HashSet<usize>,
-    is_breakpoints_enabled: bool,
 }
 
 impl Machine {
@@ -31,12 +22,6 @@ impl Machine {
             cp: 0,
             input_buffer: Vec::new(),
             is_running: false,
-            token_buffer: Vec::with_capacity(10),
-            trace_formatter: TraceFormatter::new(),
-            is_trace_enabled: false,
-            trace: Vec::new(),
-            breakpoint: HashSet::new(),
-            is_breakpoints_enabled: true,
         }
     }
 
@@ -63,16 +48,9 @@ impl Machine {
 
     // -- main loop
     pub fn run(&mut self) {
-        // hack
-        // self.memory[5485] = 6;
-        // self.memory[5489] = 21;
-        // self.memory[5490] = 21;
-
         self.is_running = true;
         while self.is_running {
-            self.dbg_push_debug_token(DebugToken::Address(self.cp));
             let operation = self.read_next();
-            self.dbg_push_debug_token(DebugToken::Operation(operation));
             match operation {
                  0 => self.halt(),
                  1 => self.set(),
@@ -96,23 +74,8 @@ impl Machine {
                 19 => self.out(),
                 20 => self.in_op(),
                 21 => self.noop(),
-                _ => {
-                    if self.is_trace_enabled {
-                        self.dbg_trace_print();
-                    }
-                    panic!("Unhandled instruction {}", operation);
-                },
+                _ => panic!("Unhandled instruction {}", operation),
             }            
-            if self.is_trace_enabled {
-                let operation_trace = self.trace_formatter.format(&self.token_buffer);
-                self.trace.push(operation_trace);
-                // println!("{}", operation_trace);
-                self.token_buffer.clear();                
-            }
-            if self.is_breakpoints_enabled && self.breakpoint.contains(&self.cp) {
-                println!("* Breakpoint at {}", self.cp);
-                self.dbg_start_debugger();
-            }
         }
     }
 
@@ -127,12 +90,10 @@ impl Machine {
     fn read_value(&mut self) -> u16 {
         let value = self.read_next();
         if value < REGISTERS_OFFSET as u16 {
-            self.dbg_push_debug_token(DebugToken::Value(value, None));
             value
         } else {
             let register_idx = value as usize - REGISTERS_OFFSET;
             let reg_value = self.register[register_idx];
-            self.dbg_push_debug_token(DebugToken::Value(reg_value, Some(register_idx)));
             reg_value
         }
     }
@@ -147,7 +108,6 @@ impl Machine {
     #[inline]
     fn write_register(&mut self, reg_idx: usize, value: u16) {
         self.register[reg_idx] = value;
-        self.dbg_push_debug_token(DebugToken::Comment(format!("reg[{reg_idx}] = {}", self.register[reg_idx])));
     }
 
     #[inline]
@@ -197,7 +157,6 @@ impl Machine {
     // 3: remove the top element from the stack and write it into <a>; empty stack = error
     fn pop(&mut self) {
         let a = self.read_register_idx();
-        self.dbg_push_debug_token(DebugToken::RegisterIdx(a));
         let value = self.stack.pop().unwrap();
         self.write_register(a, value);
     }
@@ -218,14 +177,12 @@ impl Machine {
     fn jmp(&mut self) {
         let jmp_addr = self.read_next();        
         self.cp = jmp_addr as usize;
-        self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
 
     // 7: if <a> is nonzero, jump to <b>
     fn jt(&mut self) {
         let a = self.read_value();
         let b = self.read_next() as usize;
-        self.dbg_push_debug_token(DebugToken::Address(b));
         if a != 0 {
             self.cp = b;
         }
@@ -235,7 +192,6 @@ impl Machine {
     fn jf(&mut self) {
         let a = self.read_value();
         let b = self.read_next() as usize;
-        self.dbg_push_debug_token(DebugToken::Address(b));
         if a == 0 {
             self.cp = b;
         }
@@ -295,24 +251,18 @@ impl Machine {
         let jmp_addr = self.read_value();
         self.stack.push(self.cp as u16);
         self.cp = jmp_addr as usize;
-        self.dbg_push_debug_token(DebugToken::Comment(format!("jump to {jmp_addr}")));
     }
 
     // 18: remove the top element from the stack and jump to it; empty stack = halt
     fn ret(&mut self) {
         let jmp_addr = self.stack.pop().unwrap();        
         self.cp = jmp_addr as usize;        
-        self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
     
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
         print!("{arg}");
-        // don't comment whitespaces
-        if arg.is_alphanumeric() {
-            self.dbg_push_debug_token(DebugToken::Comment(format!("{arg}")));
-        }        
     }
 
     // 20: read a character from the terminal and write its ascii code to <a>
@@ -321,29 +271,14 @@ impl Machine {
     fn in_op(&mut self) {        
         if self.input_buffer.is_empty() {
             let mut buffer = String::new();
-            io::stdin().read_line(&mut buffer).unwrap();
-            if buffer == "dbg\n" {
-                self.dbg_start_debugger();
-                buffer.clear();
-                io::stdin().read_line(&mut buffer).unwrap();
-            } 
+            io::stdin().read_line(&mut buffer).unwrap(); 
             for byte in buffer.as_bytes().iter().rev() {
                 self.input_buffer.push(*byte);
             }
         }
         let ascii = self.input_buffer.pop().unwrap() as u16;
-        self.dbg_push_debug_token(DebugToken::Value(ascii, None));
-
         let a = self.read_register_idx();
         self.write_register(a, ascii);
-
-        {
-            let chr = ascii as u8 as char;
-            if chr.is_alphanumeric() {
-                self.dbg_push_debug_token(DebugToken::Comment(format!(" '{chr}'", )));
-            }
-        }
-        
     }
 
     // 21: no operation
@@ -351,117 +286,5 @@ impl Machine {
         // no op
     }
 
-    // -- debugger
-    fn dbg_push_debug_token(&mut self, token: DebugToken) {
-        if self.is_trace_enabled {
-            self.token_buffer.push(token);
-        }
-    }
-
-    fn dbg_start_debugger(&mut self) {
-        println!("* interactive debugger");        
-        let parser = DebugCommandParser::new();        
-        loop {
-            let mut buffer = String::new();
-            io::stdin().read_line(&mut buffer).unwrap();
-            let cmd = parser.parse(&buffer);
-            match cmd {                
-                DebuggerCommand::BreakpointsPrint => self.dbg_breakpoints_print(),
-                DebuggerCommand::BreakpointAdd(address) => self.dbg_breakpoint_add(address),
-                DebuggerCommand::BreakpointRemove(address) => self.dbg_breakpoint_remove(address),
-                DebuggerCommand::BreakpointsEnabled(is_enabled) => self.dbg_breakpoint_enable(is_enabled),
-                DebuggerCommand::TracePrint => self.dbg_trace_print(),
-                DebuggerCommand::TraceEnabled(is_enabled) => self.dbg_trace_enable(is_enabled),
-                DebuggerCommand::TraceSizePrint => self.dbg_trace_size_print(),
-                DebuggerCommand::TraceClear => self.dbg_trace_clear(),
-                DebuggerCommand::StackPrint => self.dbg_stack_print(),
-                DebuggerCommand::StackSizePrint => self.dbg_stack_size_print(),
-                DebuggerCommand::RegistersPrint => self.dbg_registers_print(),
-                DebuggerCommand::RegisterWrite(idx, value) => self.dbg_registers_write(idx, value),
-                DebuggerCommand::Continue => break,
-                _ => println!("* Unknown command. Try again"),
-            }            
-        }
-        println!("* resuming execution");
-    }
-
-    fn dbg_breakpoints_print(&self) {
-        println!("* break points enabled: {}", if self.is_breakpoints_enabled { "YES" } else { "NO"} );
-        let output = self.breakpoint.iter()
-            .map(|address| format!("@{address}"))        
-            .collect::<Vec<String>>()
-            .join("   ");
-        println!("{}", output);
-    }
-
-    fn dbg_breakpoint_add(&mut self, address: usize) {
-        self.breakpoint.insert(address);
-        println!("* added breakpoint at {address}");
-    }
-
-    fn dbg_breakpoint_remove(&mut self, address: usize) {
-        self.breakpoint.remove(&address);
-        println!("* breakpoint at {address} removed");
-    }
-
-    fn dbg_breakpoint_enable(&mut self, is_enabled: bool) {
-        self.is_breakpoints_enabled = is_enabled;
-        let output = if is_enabled {
-            "breakpoints are enabled"
-        } else {
-            "all breakpoins are disabled"
-        };
-        println!("* {}", output);
-    }
-
-    fn dbg_registers_print(&self) {
-        let output = (0..self.register.len())
-            .map(|i| format!("reg{i}={}", self.register[i]))        
-            .collect::<Vec<String>>()
-            .join("   ");
-        println!("* {}", output);    
-    }
-
-    fn dbg_stack_size_print(&self) {
-        println!("* {} items in the stack", self.stack.len());
-    }
-
-    fn dbg_stack_print(&self) {
-        let output = self.stack.iter()
-            .map(|value| format!("{value}"))
-            .collect::<Vec<String>>()
-            .join("  ");
-        println!("* {} <-- TOP", output);
-    }
-
-    fn dbg_trace_print(&self) {
-        if self.trace.is_empty() {
-            println!("* empty");
-        } else {
-            for line in self.trace.iter() {
-                println!("{line}");
-            }
-        }
-        println!("* trace enabled: {}", if self.is_trace_enabled { "YES" } else { "NO"} );
-    }
-
-    fn dbg_trace_enable(&mut self, is_enabled: bool) {
-        self.is_trace_enabled = is_enabled;
-        println!("* trace {}", if is_enabled { "enabled" } else { "disabled" });
-    }
-
-    fn dbg_trace_size_print(&self) {
-        println!("* {} lines", self.trace.len());
-    }
-
-    fn dbg_trace_clear(&mut self) {
-        self.trace.clear();
-        println!("* trace cleared");
-    }
-
-    fn dbg_registers_write(&mut self, reg_idx: usize, value: u16) {
-        self.register[reg_idx] = value;
-        println!("* register [{reg_idx}] value updated");
-    }
     
 }

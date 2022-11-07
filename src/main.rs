@@ -5,7 +5,7 @@ mod machine;
 use machine::machine::Machine;
 
 fn main() -> io::Result<()> {
-    println!("* Rusty Virtual Machine *");
+    println!("-- Virtual Machine for Synacor Challenge");
     let args: Vec<String> = std::env::args().collect();
     if let None = args.get(1) {
         show_usage(&args[0]);
@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
     
     println!();
     machine.run();
-    println!("\n* Goodbye *");
+    println!("\n-- Execution completed");
     Ok(())
 }
 
