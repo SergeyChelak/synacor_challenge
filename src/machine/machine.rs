@@ -93,8 +93,7 @@ impl Machine {
             value
         } else {
             let register_idx = value as usize - REGISTERS_OFFSET;
-            let reg_value = self.register[register_idx];
-            reg_value
+            self.register[register_idx]
         }
     }
 
