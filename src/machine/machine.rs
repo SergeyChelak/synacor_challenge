@@ -10,14 +10,14 @@ pub struct Machine {
     stack: Vec<u16>,
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
-    is_running: bool,    
+    is_running: bool,
 }
 
 impl Machine {
     pub fn new(program: Vec<u8>) -> Self {
-        Machine { 
-            memory: Self::setup_memory(program), 
-            register: [0; REGISTERS_COUNT], 
+        Machine {
+            memory: Self::setup_memory(program),
+            register: [0; REGISTERS_COUNT],
             stack: Vec::new(),
             cp: 0,
             input_buffer: Vec::new(),
@@ -37,11 +37,11 @@ impl Machine {
 
     pub fn write_to_input_buffer(&mut self, strings: &Vec<String>) {
         let mut input_buffer: Vec<u8> = Vec::new();
-        for str in strings.iter().rev() {            
+        for str in strings.iter().rev() {
             input_buffer.push('\n' as u8);
             for byte in str.as_bytes().iter().rev() {
                 input_buffer.push(*byte);
-            }            
+            }
         }
         self.input_buffer = input_buffer;
     }
@@ -75,7 +75,7 @@ impl Machine {
                 20 => self.in_op(),
                 21 => self.noop(),
                 _ => panic!("Unhandled instruction {}", operation),
-            }            
+            }
         }
     }
 
@@ -98,7 +98,7 @@ impl Machine {
     }
 
     #[inline]
-    fn read_register_idx(&mut self) -> usize {        
+    fn read_register_idx(&mut self) -> usize {
         let value = self.read_next() as usize;
         assert!(value >= REGISTERS_OFFSET, "Register index access violation");
         value - REGISTERS_OFFSET
@@ -119,7 +119,7 @@ impl Machine {
     fn write_memory_at(&mut self, address: usize, value: u16) {
         assert!(address < REGISTERS_OFFSET, "Write memory violation");
         self.memory[address] = value;
-    }   
+    }
 
     #[inline]
     fn read_register_idx_unary_arg(&mut self) -> (usize, u16) {
@@ -135,7 +135,7 @@ impl Machine {
         (a, b, c)
     }
 
-    // -- operations 
+    // -- operations
     // 0: stop execution and terminate the program
     fn halt(&mut self) {
         self.is_running = false;
@@ -143,7 +143,7 @@ impl Machine {
 
     // 1:  set register <a> to the value of <b>
     fn set(&mut self) {
-        let (a, b) = self.read_register_idx_unary_arg();        
+        let (a, b) = self.read_register_idx_unary_arg();
         self.write_register(a, b);
     }
 
@@ -174,7 +174,7 @@ impl Machine {
 
     // 6: jump to <a>
     fn jmp(&mut self) {
-        let jmp_addr = self.read_next();        
+        let jmp_addr = self.read_next();
         self.cp = jmp_addr as usize;
     }
 
@@ -254,10 +254,10 @@ impl Machine {
 
     // 18: remove the top element from the stack and jump to it; empty stack = halt
     fn ret(&mut self) {
-        let jmp_addr = self.stack.pop().unwrap();        
-        self.cp = jmp_addr as usize;        
+        let jmp_addr = self.stack.pop().unwrap();
+        self.cp = jmp_addr as usize;
     }
-    
+
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
@@ -267,10 +267,10 @@ impl Machine {
     // 20: read a character from the terminal and write its ascii code to <a>
     // It can be assumed that once input starts, it will continue until a newline is encountered
     // This means that you can safely read whole lines from the keyboard and trust that they will be fully read
-    fn in_op(&mut self) {        
+    fn in_op(&mut self) {
         if self.input_buffer.is_empty() {
             let mut buffer = String::new();
-            io::stdin().read_line(&mut buffer).unwrap(); 
+            io::stdin().read_line(&mut buffer).unwrap();
             for byte in buffer.as_bytes().iter().rev() {
                 self.input_buffer.push(*byte);
             }
@@ -285,5 +285,5 @@ impl Machine {
         // no op
     }
 
-    
+
 }
