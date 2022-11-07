@@ -4,6 +4,9 @@ use std::io::{self, Error, ErrorKind, Read, BufRead};
 mod machine;
 use machine::machine::Machine;
 
+use crate::machine::disasm::{Disassembler, self};
+// use machine::debugger::Debugger;
+
 fn main() -> io::Result<()> {
     println!("-- Virtual Machine for Synacor Challenge");
     let args: Vec<String> = std::env::args().collect();
@@ -13,7 +16,17 @@ fn main() -> io::Result<()> {
     }
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
-    let machine = Machine::new(program);
+
+    let disasm = Disassembler::new(&program);
+    if let Err(error) = disasm {
+        println!("Failed to setup disassembler with error {:?}", error);
+        return Ok(());
+    }
+    let mut disasm = disasm.unwrap();
+    disasm.parse();
+    disasm.save_to_file("data/challenge.asm")?;
+
+    let machine = Machine::new(&program);
     if let Err(error) = machine {
         println!("Failed to setup machine with error {:?}", error);
         return Ok(());
@@ -29,7 +42,7 @@ fn main() -> io::Result<()> {
     }
 
     println!();
-    machine.run();
+    //machine.run();
     println!("\n-- Execution completed");
     Ok(())
 }
