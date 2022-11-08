@@ -175,27 +175,27 @@ impl Machine {
     }
 
     // -- operations
-    // 0: stop execution and terminate the program
+    // halt: (0) -- stop execution and terminate the program
     fn halt(&mut self) -> Result<(), MachineError> {
         self.is_running = false;
         Ok(())
     }
 
-    // 1:  set register <a> to the value of <b>
+    // set: (1 a b) -- set register <a> to the value of <b>
     fn set(&mut self) -> Result<(), MachineError> {
         let (a, b) = self.read_register_idx_unary_arg()?;
         self.write_register(a, b);
         Ok(())
     }
 
-    // 2: push <a> onto the stack
+    // push: (2 a) -- push <a> onto the stack
     fn push(&mut self) -> Result<(), MachineError> {
         let a = self.read_value()?;
         self.stack.push(a);
         Ok(())
     }
 
-    // 3: remove the top element from the stack and write it into <a>; empty stack = error
+    // pop: (3 a) -- remove the top element from the stack and write it into <a>; empty stack = error
     fn pop(&mut self) -> Result<(), MachineError> {
         let a = self.read_register_idx()?;
         if let Some(value) = self.stack.pop() {
@@ -206,28 +206,28 @@ impl Machine {
         }
     }
 
-    // 4: set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
+    // eq: (4 a b c) -- set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
     fn eq(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, if b == c { 1 } else { 0 });
         Ok(())
     }
 
-    // 5: set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
+    // gt: (5 a b c) -- set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
     fn gt(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, if b > c { 1 } else { 0 });
         Ok(())
     }
 
-    // 6: jump to <a>
+    // jmp: (6 a) -- jump to <a>
     fn jmp(&mut self) -> Result<(), MachineError> {
         let jmp_addr = self.read_next()?;
         self.cp = jmp_addr as usize;
         Ok(())
     }
 
-    // 7: if <a> is nonzero, jump to <b>
+    // jt: (7 a b) -- if <a> is nonzero, jump to <b>
     fn jt(&mut self) -> Result<(), MachineError> {
         let a = self.read_value()?;
         let b = self.read_next()? as usize;
@@ -237,7 +237,7 @@ impl Machine {
         Ok(())
     }
 
-    // 8: if <a> is zero, jump to <b>
+    // jf: (8 a b) -- if <a> is zero, jump to <b>
     fn jf(&mut self) -> Result<(), MachineError> {
         let a = self.read_value()?;
         let b = self.read_next()? as usize;
@@ -247,49 +247,49 @@ impl Machine {
         Ok(())
     }
 
-    // 9: assign into <a> the sum of <b> and <c> (modulo 32768)
+    // add: (9 a b c) -- assign into <a> the sum of <b> and <c> (modulo 32768)
     fn add(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, (b + c) % REGISTERS_OFFSET as u16);
         Ok(())
     }
 
-    // 10: store into <a> the product of <b> and <c> (modulo 32768)
+    // mult: (10 a b c) -- store into <a> the product of <b> and <c> (modulo 32768)
     fn mult(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, (b as usize * c as usize % REGISTERS_OFFSET) as u16);
         Ok(())
     }
 
-    // 11 store into <a> the remainder of <b> divided by <c>
+    // mod: (11 a b c) -- store into <a> the remainder of <b> divided by <c>
     fn mod_op(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, b % c);
         Ok(())
     }
 
-    // 12: stores into <a> the bitwise and of <b> and <c>
+    // and: (12 a b c) -- stores into <a> the bitwise and of <b> and <c>
     fn and(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, b & c);
         Ok(())
     }
 
-    // 13: stores into <a> the bitwise or of <b> and <c>
+    // or: (13 a b c) -- stores into <a> the bitwise or of <b> and <c>
     fn or(&mut self) -> Result<(), MachineError> {
         let (a, b, c) = self.read_register_idx_binary_args()?;
         self.write_register(a, b | c);
         Ok(())
     }
 
-    // 14: stores 15-bit bitwise inverse of <b> in <a>
+    // not: (14 a b) -- stores 15-bit bitwise inverse of <b> in <a>
     fn not(&mut self) -> Result<(), MachineError> {
         let (a, b) = self.read_register_idx_unary_arg()?;
         self.write_register(a, !b & 0x7fff);
         Ok(())
     }
 
-    // 15: read memory at address <b> and write it to <a>
+    // rmem: (15 a b) -- read memory at address <b> and write it to <a>
     fn rmem(&mut self) -> Result<(), MachineError> {
         let (a, b) = self.read_register_idx_unary_arg()?;
         let value = self.read_memory_at(b as usize)?;
@@ -297,14 +297,14 @@ impl Machine {
         Ok(())
     }
 
-    // 16: write the value from <b> into memory at address <a>
+    // wmem: (16 a b) -- write the value from <b> into memory at address <a>
     fn wmem(&mut self) -> Result<(), MachineError> {
         let a = self.read_value()? as usize; // addr!
         let b = self.read_value()?;
         self.write_memory_at(a, b)
     }
 
-    // 17: write the address of the next instruction to the stack and jump to <a>
+    // call: (17 a) -- write the address of the next instruction to the stack and jump to <a>
     fn call(&mut self) -> Result<(), MachineError> {
         let jmp_addr = self.read_value()?;
         self.stack.push(self.cp as u16);
@@ -312,7 +312,7 @@ impl Machine {
         Ok(())
     }
 
-    // 18: remove the top element from the stack and jump to it; empty stack = halt
+    // ret: (18) -- remove the top element from the stack and jump to it; empty stack = halt
     fn ret(&mut self) -> Result<(), MachineError> {
         if let Some(jmp_addr) = self.stack.pop() {
             self.cp = jmp_addr as usize;
@@ -322,16 +322,14 @@ impl Machine {
         }
     }
 
-    // 19: write the character represented by ascii code <a> to the terminal
+    // out: (19 a) -- write the character represented by ascii code <a> to the terminal
     fn out(&mut self) -> Result<(), MachineError> {
         let arg = self.read_value()? as u8 as char;
         print!("{arg}");
         Ok(())
     }
 
-    // 20: read a character from the terminal and write its ascii code to <a>
-    // It can be assumed that once input starts, it will continue until a newline is encountered
-    // This means that you can safely read whole lines from the keyboard and trust that they will be fully read
+    // in: (20 a) -- read a character from the terminal and write its ascii code to <a>
     fn in_op(&mut self) -> Result<(), MachineError> {
         if self.input_buffer.is_empty() {
             let mut buffer = String::new();
@@ -351,7 +349,7 @@ impl Machine {
         }
     }
 
-    // 21: no operation
+    // noop: (21) -- no operation
     fn noop(&self) -> Result<(), MachineError> {
         // no op
         Ok(())
