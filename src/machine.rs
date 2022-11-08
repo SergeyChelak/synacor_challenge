@@ -1,8 +1,8 @@
 use std::io;
 
-pub const REGISTERS_COUNT: usize = 8;
-pub const REGISTERS_OFFSET: usize = 32768;
-pub const MEMORY_SIZE: usize = 1 << 15; // words
+const REGISTERS_COUNT: usize = 8;
+const REGISTERS_OFFSET: usize = 32768;
+const MEMORY_SIZE: usize = 1 << 15; // words
 
 #[derive(Debug)]
 pub enum MachineError {
