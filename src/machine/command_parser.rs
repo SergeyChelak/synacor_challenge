@@ -1,6 +1,6 @@
 pub enum DebuggerCommand {
     BreakpointsPrint,           // show breakpoint list
-    BreakpointAdd(usize),       // add breakpoint at address  
+    BreakpointAdd(usize),       // add breakpoint at address
     BreakpointRemove(usize),    // remove breakpoint at address
     BreakpointsEnabled(bool),   // turn on/off breakpoints
     RegistersPrint,             // prints registers state
@@ -16,6 +16,8 @@ pub enum DebuggerCommand {
     CodePointerWrite(usize),    // moves code pointer
     ConsoleClear,               // fills gap with specified amount of lines
     Continue,                   // continue executing
+    Code,
+    MemoryRead(usize),
     Unknown,
 }
 
@@ -37,7 +39,9 @@ enum CommandId {
     CodePointerPrint,
     CodePointerWrite,
     ConsoleClear,
-    Continue
+    Continue,
+    Code,
+    MemoryRead,
 }
 
 enum Rule {
@@ -56,6 +60,8 @@ const DBG_CMD_STACK: &str = "stack";
 const DBG_CMD_TRACE: &str = "trace";
 const DBG_CMD_CODE_POINTER: &str = "cp";
 const DBG_CMD_CONTINUE: &str = "cnt";
+const DBG_CMD_CODE: &str = "code";
+const DBG_CMD_MEMORY: &str = "mem";
 
 const DBG_CMD_ADD: &str = "add";
 const DBG_CMD_REMOVE: &str = "rem";
@@ -76,12 +82,12 @@ impl DebugCommandParser {
         }
     }
 
-    fn create_matching_rules() -> Vec<(CommandId, Vec<Rule>)> {        
+    fn create_matching_rules() -> Vec<(CommandId, Vec<Rule>)> {
         vec![
             (CommandId::BreakpointsPrint, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT)]),
             (CommandId::BreakpointAdd, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::EqualStr(DBG_CMD_ADD), Rule::AnyNumber]),
             (CommandId::BreakpointRemove, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::EqualStr(DBG_CMD_REMOVE), Rule::AnyNumber]),
-            (CommandId::BreakpointsEnabled, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::AnyBool]),                                   
+            (CommandId::BreakpointsEnabled, vec![Rule::EqualStr(DBG_CMD_BREAKPOINT), Rule::AnyBool]),
 
             (CommandId::RegistersPrint, vec![Rule::EqualStr(DBG_CMD_REGISTER)]),
             (CommandId::RegisterWrite, vec![Rule::EqualStr(DBG_CMD_REGISTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber, Rule::AnyNumber]),
@@ -95,11 +101,15 @@ impl DebugCommandParser {
             (CommandId::TraceResize, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_SIZE), Rule::AnyNumber]),
             (CommandId::TraceClear, vec![Rule::EqualStr(DBG_CMD_TRACE), Rule::EqualStr(DBG_CMD_CLEAR)]),
 
-            (CommandId::CodePointerPrint, vec![Rule::EqualStr(DBG_CMD_CODE_POINTER)]),                                            
+            (CommandId::CodePointerPrint, vec![Rule::EqualStr(DBG_CMD_CODE_POINTER)]),
             (CommandId::CodePointerWrite, vec![Rule::EqualStr(DBG_CMD_CODE_POINTER), Rule::EqualStr(DBG_CMD_WRITE), Rule::AnyNumber]),
-            
+
             (CommandId::ConsoleClear, vec![Rule::EqualStr(DBG_CMD_CLEAR)]),
             (CommandId::Continue, vec![Rule::EqualStr(DBG_CMD_CONTINUE)]),
+
+            (CommandId::Code, vec![Rule::EqualStr(DBG_CMD_CODE)]),
+
+            (CommandId::MemoryRead, vec![Rule::EqualStr(DBG_CMD_MEMORY), Rule::AnyNumber]),
         ]
     }
 
@@ -111,12 +121,12 @@ impl DebugCommandParser {
             let (cmd_id, rules) = data;
             if rules.len() != inp_count {
                 continue;
-            }            
+            }
             let mut params: Vec<Parameter> = Vec::new();
             for pos in 0..inp_count {
                 let token = tokens[pos];
                 let rule = &rules[pos];
-                if !self.is_matching(rule, token, &mut params) {                    
+                if !self.is_matching(rule, token, &mut params) {
                     continue 'outer;
                 }
             }
@@ -128,7 +138,7 @@ impl DebugCommandParser {
     fn is_matching(&self, rule: &Rule, token: &str, param_list: &mut Vec<Parameter>) -> bool {
         match *rule {
             Rule::EqualStr(value) => value == token,
-            Rule::AnyBool => 
+            Rule::AnyBool =>
                 if token == DBG_CMD_TRUE {
                     param_list.push(Parameter::Bool(true));
                     true
@@ -145,20 +155,20 @@ impl DebugCommandParser {
                 } else {
                     false
                 }
-            }                
+            }
         }
     }
 
     fn build_command(&self, cmd_id: &CommandId, params: &Vec<Parameter>) -> DebuggerCommand {
         match cmd_id {
             CommandId::BreakpointsPrint => DebuggerCommand::BreakpointsPrint,
-            CommandId::BreakpointAdd => 
+            CommandId::BreakpointAdd =>
                 if let Parameter::Usize(number) = params[0] {
                     DebuggerCommand::BreakpointAdd(number)
                 } else {
                     panic!()
                 },
-            CommandId::BreakpointRemove => 
+            CommandId::BreakpointRemove =>
                 if let Parameter::Usize(number) = params[0] {
                     DebuggerCommand::BreakpointRemove(number)
                 } else {
@@ -180,7 +190,7 @@ impl DebugCommandParser {
             CommandId::StackSizePrint => DebuggerCommand::StackSizePrint,
             CommandId::StackPrint => DebuggerCommand::StackPrint,
             CommandId::TracePrint => DebuggerCommand::TracePrint,
-            CommandId::TraceEnabled => 
+            CommandId::TraceEnabled =>
                 if let Parameter::Bool(is_enabled) = params[0] {
                     DebuggerCommand::TraceEnabled(is_enabled)
                 } else {
@@ -203,7 +213,13 @@ impl DebugCommandParser {
                 },
             CommandId::ConsoleClear => DebuggerCommand::ConsoleClear,
             CommandId::Continue => DebuggerCommand::Continue,
-        }        
+            CommandId::Code => DebuggerCommand::Code,
+            CommandId::MemoryRead => if let Parameter::Usize(number) = params[0] {
+                    DebuggerCommand::MemoryRead(number)
+                } else {
+                    panic!()
+                },
+        }
     }
 
 

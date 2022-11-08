@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io;
 use super::debug::*;
@@ -13,28 +14,30 @@ pub struct Machine {
     stack: Vec<u16>,
     cp: usize,      // code pointer
     input_buffer: Vec<u8>,
-    is_running: bool,    
+    is_running: bool,
     token_buffer: Vec<DebugToken>,
     trace_formatter: TraceFormatter,
     is_trace_enabled: bool,
-    trace: Vec<String>,
+    trace: Vec<usize>,
+    code: HashMap<usize, String>,
     breakpoint: HashSet<usize>,
     is_breakpoints_enabled: bool,
 }
 
 impl Machine {
     pub fn new(program: Vec<u8>) -> Self {
-        Machine { 
-            memory: Self::setup_memory(program), 
-            register: [0; REGISTERS_COUNT], 
+        Machine {
+            memory: Self::setup_memory(program),
+            register: [0; REGISTERS_COUNT],
             stack: Vec::new(),
             cp: 0,
             input_buffer: Vec::new(),
             is_running: false,
             token_buffer: Vec::with_capacity(10),
             trace_formatter: TraceFormatter::new(),
-            is_trace_enabled: false,
+            is_trace_enabled: true,
             trace: Vec::new(),
+            code: HashMap::new(),
             breakpoint: HashSet::new(),
             is_breakpoints_enabled: true,
         }
@@ -52,11 +55,11 @@ impl Machine {
 
     pub fn write_to_input_buffer(&mut self, strings: &Vec<String>) {
         let mut input_buffer: Vec<u8> = Vec::new();
-        for str in strings.iter().rev() {            
+        for str in strings.iter().rev() {
             input_buffer.push('\n' as u8);
             for byte in str.as_bytes().iter().rev() {
                 input_buffer.push(*byte);
-            }            
+            }
         }
         self.input_buffer = input_buffer;
     }
@@ -70,6 +73,7 @@ impl Machine {
 
         self.is_running = true;
         while self.is_running {
+            let in_addr = self.cp;
             self.dbg_push_debug_token(DebugToken::Address(self.cp));
             let operation = self.read_next();
             self.dbg_push_debug_token(DebugToken::Operation(operation));
@@ -102,12 +106,13 @@ impl Machine {
                     }
                     panic!("Unhandled instruction {}", operation);
                 },
-            }            
+            }
             if self.is_trace_enabled {
                 let operation_trace = self.trace_formatter.format(&self.token_buffer);
-                self.trace.push(operation_trace);
+                self.trace.push(in_addr);
+                self.code.insert(in_addr, operation_trace);
                 // println!("{}", operation_trace);
-                self.token_buffer.clear();                
+                self.token_buffer.clear();
             }
             if self.is_breakpoints_enabled && self.breakpoint.contains(&self.cp) {
                 println!("* Breakpoint at {}", self.cp);
@@ -138,7 +143,7 @@ impl Machine {
     }
 
     #[inline]
-    fn read_register_idx(&mut self) -> usize {        
+    fn read_register_idx(&mut self) -> usize {
         let value = self.read_next() as usize;
         assert!(value >= REGISTERS_OFFSET, "Register index access violation");
         value - REGISTERS_OFFSET
@@ -160,7 +165,7 @@ impl Machine {
     fn write_memory_at(&mut self, address: usize, value: u16) {
         assert!(address < REGISTERS_OFFSET, "Write memory violation");
         self.memory[address] = value;
-    }   
+    }
 
     #[inline]
     fn read_register_idx_unary_arg(&mut self) -> (usize, u16) {
@@ -176,7 +181,7 @@ impl Machine {
         (a, b, c)
     }
 
-    // -- operations 
+    // -- operations
     // 0: stop execution and terminate the program
     fn halt(&mut self) {
         self.is_running = false;
@@ -184,7 +189,7 @@ impl Machine {
 
     // 1:  set register <a> to the value of <b>
     fn set(&mut self) {
-        let (a, b) = self.read_register_idx_unary_arg();        
+        let (a, b) = self.read_register_idx_unary_arg();
         self.write_register(a, b);
     }
 
@@ -216,7 +221,7 @@ impl Machine {
 
     // 6: jump to <a>
     fn jmp(&mut self) {
-        let jmp_addr = self.read_next();        
+        let jmp_addr = self.read_next();
         self.cp = jmp_addr as usize;
         self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
@@ -300,11 +305,11 @@ impl Machine {
 
     // 18: remove the top element from the stack and jump to it; empty stack = halt
     fn ret(&mut self) {
-        let jmp_addr = self.stack.pop().unwrap();        
-        self.cp = jmp_addr as usize;        
+        let jmp_addr = self.stack.pop().unwrap();
+        self.cp = jmp_addr as usize;
         self.dbg_push_debug_token(DebugToken::Address(self.cp));
     }
-    
+
     // 19: write the character represented by ascii code <a> to the terminal
     fn out(&mut self) {
         let arg = self.read_value() as u8 as char;
@@ -312,13 +317,13 @@ impl Machine {
         // don't comment whitespaces
         if arg.is_alphanumeric() {
             self.dbg_push_debug_token(DebugToken::Comment(format!("{arg}")));
-        }        
+        }
     }
 
     // 20: read a character from the terminal and write its ascii code to <a>
     // It can be assumed that once input starts, it will continue until a newline is encountered
     // This means that you can safely read whole lines from the keyboard and trust that they will be fully read
-    fn in_op(&mut self) {        
+    fn in_op(&mut self) {
         if self.input_buffer.is_empty() {
             let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).unwrap();
@@ -326,7 +331,7 @@ impl Machine {
                 self.dbg_start_debugger();
                 buffer.clear();
                 io::stdin().read_line(&mut buffer).unwrap();
-            } 
+            }
             for byte in buffer.as_bytes().iter().rev() {
                 self.input_buffer.push(*byte);
             }
@@ -343,7 +348,7 @@ impl Machine {
                 self.dbg_push_debug_token(DebugToken::Comment(format!(" '{chr}'", )));
             }
         }
-        
+
     }
 
     // 21: no operation
@@ -359,13 +364,13 @@ impl Machine {
     }
 
     fn dbg_start_debugger(&mut self) {
-        println!("* interactive debugger");        
-        let parser = DebugCommandParser::new();        
+        println!("* interactive debugger");
+        let parser = DebugCommandParser::new();
         loop {
             let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).unwrap();
             let cmd = parser.parse(&buffer);
-            match cmd {                
+            match cmd {
                 DebuggerCommand::BreakpointsPrint => self.dbg_breakpoints_print(),
                 DebuggerCommand::BreakpointAdd(address) => self.dbg_breakpoint_add(address),
                 DebuggerCommand::BreakpointRemove(address) => self.dbg_breakpoint_remove(address),
@@ -378,17 +383,34 @@ impl Machine {
                 DebuggerCommand::StackSizePrint => self.dbg_stack_size_print(),
                 DebuggerCommand::RegistersPrint => self.dbg_registers_print(),
                 DebuggerCommand::RegisterWrite(idx, value) => self.dbg_registers_write(idx, value),
+                DebuggerCommand::CodePointerPrint => self.dbg_codepointer_print(),                  // prints current code pointer
+                DebuggerCommand::CodePointerWrite(addr) => self.dbg_codepointer_write(addr), // moves code pointer
+                DebuggerCommand::Code => self.dbg_code_print(),
+                DebuggerCommand::MemoryRead(addr) => self.dbg_memory_read(addr),
                 DebuggerCommand::Continue => break,
                 _ => println!("* Unknown command. Try again"),
-            }            
+            }
         }
         println!("* resuming execution");
+    }
+
+    fn dbg_memory_read(&self, addr: usize) {
+        println!("* memo at[{addr}] = {}", self.memory[addr]);
+    }
+
+    fn dbg_codepointer_print(&self) {
+        println!("* cp = {}", self.cp);
+    }
+
+    fn dbg_codepointer_write(&mut self, value: usize) {
+        self.cp = value;
+        println!("* set cp to {}", self.cp);
     }
 
     fn dbg_breakpoints_print(&self) {
         println!("* break points enabled: {}", if self.is_breakpoints_enabled { "YES" } else { "NO"} );
         let output = self.breakpoint.iter()
-            .map(|address| format!("@{address}"))        
+            .map(|address| format!("@{address}"))
             .collect::<Vec<String>>()
             .join("   ");
         println!("{}", output);
@@ -416,10 +438,10 @@ impl Machine {
 
     fn dbg_registers_print(&self) {
         let output = (0..self.register.len())
-            .map(|i| format!("reg{i}={}", self.register[i]))        
+            .map(|i| format!("reg{i}={}", self.register[i]))
             .collect::<Vec<String>>()
             .join("   ");
-        println!("* {}", output);    
+        println!("* {}", output);
     }
 
     fn dbg_stack_size_print(&self) {
@@ -439,10 +461,28 @@ impl Machine {
             println!("* empty");
         } else {
             for line in self.trace.iter() {
-                println!("{line}");
+                let value = if let Some(str) = self.code.get(line) {
+                    str
+                } else {
+                    "???"
+                };
+                println!("{}", value);
             }
         }
         println!("* trace enabled: {}", if self.is_trace_enabled { "YES" } else { "NO"} );
+    }
+
+    fn dbg_code_print(&self) {
+        let mut keys = self.code.keys().collect::<Vec<&usize>>();
+        keys.sort();
+        for key in keys {
+            let value = if let Some(str) = self.code.get(key) {
+                str
+            } else {
+                "???"
+            };
+            println!("{}", value);
+        }
     }
 
     fn dbg_trace_enable(&mut self, is_enabled: bool) {
@@ -463,5 +503,5 @@ impl Machine {
         self.register[reg_idx] = value;
         println!("* register [{reg_idx}] value updated");
     }
-    
+
 }
