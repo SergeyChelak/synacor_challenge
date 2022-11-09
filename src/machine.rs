@@ -66,6 +66,18 @@ impl Machine {
 
     // -- main loop
     pub fn run(&mut self) {
+        {
+            // teleport hack
+            self.memory[5485] = 6;      // reg0 = 6
+            self.memory[5488] = 5;      // reg1 = 5
+            // skip confirmation process
+            self.memory[5489] = 21;
+            self.memory[5490] = 21;
+            // set reg7 = 25734
+            self.memory[5451] = 1;
+            self.memory[5452] = 32775;
+            self.memory[5453] = 25734;
+        }
         self.is_running = true;
         while self.is_running {
             if let Err(error) = self.perform_operation() {

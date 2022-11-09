@@ -49,7 +49,3 @@ use corroded coin
 north
 take teleporter
 use teleporter
-take business card
-look business card
-take strange book
-look strange book
