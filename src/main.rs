@@ -2,7 +2,10 @@ use std::fs::File;
 use std::io::{self, Error, ErrorKind, Read, BufRead};
 
 mod machine;
-use machine::machine::Machine;
+mod debug;
+mod command_parser;
+
+use machine::Machine;
 
 fn main() -> io::Result<()> {
     println!("* Rusty Virtual Machine *");
@@ -14,15 +17,15 @@ fn main() -> io::Result<()> {
     let program = load_program(&args[1])?;
     println!("{} bytes read", program.len());
     let mut machine = Machine::new(program);
-    // setting up optional script        
+    // setting up optional script
     if let Some(path) = args.get(2) {
         let mut script: Vec<String> = Vec::new();
         load_script(path, &mut script)?;
         println!("{} commands loaded", script.len());
-        //         
+        //
         machine.write_to_input_buffer(&script);
     }
-    
+
     println!();
     machine.run();
     println!("\n* Goodbye *");
