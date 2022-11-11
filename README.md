@@ -6,7 +6,7 @@ This project is a usual CLI application written in Rust. It also contains additi
 ## Virtual Machine
 
 The whole challenge is messing around with a virtual machine. In the very beginning, you should implement 22 instructions according to the architecture specifications. That's not sound like a pretty complex task but it requires a accuracy in this routine.<br/>
-Once the virtual machine is completed, you may start it and enjoy the text-based quest game. Hello from 80th)<br/>
+Once the virtual machine is completed, you may start it and play the text-based quest game. Hello from 80th)<br/>
 
 ## The Quest
 Make sure that Cargo and Rust are installed. Then execute in your command line
