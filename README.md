@@ -18,7 +18,7 @@ cargo run -- data/challenge.bin
 The bruteforce solution to order the coins is [here](https://github.com/SergeyChelak/virtual_machine/blob/master/playground/coins/main.rs)
 
 ## Teleporter
-I needed to write a disassembly and execution dump to obtain the entry point, conditions to activate the handheld teleporter, and bypass its confirmation mechanism. There is a separate [branch](https://github.com/SergeyChelak/virtual_machine/tree/disassembly) for that purpose. The result is looks something like this:
+I needed to write a disassembly and execution dump for the virtual machine to obtain the entry point, conditions to activate the handheld teleporter, and bypass its confirmation mechanism. There is a separate [branch](https://github.com/SergeyChelak/virtual_machine/tree/disassembly) for that purpose. The result is looks something like this:
 ```
 5483          set [r0] 4
 5486          set [r1] 1
