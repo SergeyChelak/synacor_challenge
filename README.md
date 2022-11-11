@@ -1,5 +1,5 @@
 # [Synacor Challenge](https://challenge.synacor.com)
-This project is an usual CLI application written in Rust. It also contains additional folders:
+This project is a usual CLI application written in Rust. It also contains additional folders:
 - **data** contains the executable binary for Virtual Machine and script with the full list of commands to complete the challenge
 - **playground** contains tiny CLI apps that were written during solving quest's tasks
 
