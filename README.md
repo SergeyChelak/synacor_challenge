@@ -40,7 +40,8 @@ I needed to write a disassembly and execution dump for the virtual machine to ob
 6065         call @6027           
 6067          ret
 ```
-The search for valid value for the 8th register is [here](https://github.com/SergeyChelak/virtual_machine/blob/master/playground/confirmation/main.rs). The virtual machine patches the program before execution to pass the confirmation mechanism and, of course, to obtain the valid next challenge code
+The search for valid value for the 8th register is [here](https://github.com/SergeyChelak/virtual_machine/blob/master/playground/confirmation/main.rs). The virtual machine patches the program before execution to pass the confirmation mechanism and, of course, to obtain the valid next challenge code.<br/>
+Actually, this is an [Ackermann function](https://en.wikipedia.org/wiki/Ackermann_function)
 
 ## Vault
 You need to change the orb's weight from 22 to 30 by moving among the rooms. The path should be the shortest. The backtracking search for this task is [here](https://github.com/SergeyChelak/virtual_machine/blob/master/playground/vault/main.rs). It isn't a brilliant implementation but good enough to pass this task and complete the challenge.
